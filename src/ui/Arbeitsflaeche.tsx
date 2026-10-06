@@ -235,7 +235,15 @@ export function Arbeitsflaeche() {
         <Controls showInteractive={false} position="top-left" />
         <PaketAnzeige />
       </ReactFlow>
-      {netz.geraete.length === 0 && <p className={styles.hinweis}>{texte.leereArbeitsflaeche}</p>}
+      {netz.geraete.length === 0 && (
+        <div className={styles.hinweis}>
+          <p>{texte.leereArbeitsflaeche}</p>
+          <p>{texte.oderBeispiel}</p>
+          <button type="button" onClick={() => useApp.getState().setzeBeispieleOffen(true)}>
+            {texte.beispiele}
+          </button>
+        </div>
+      )}
       {!bearbeitbar && netz.geraete.length > 0 && !auswahl && (
         <p className={styles.hinweisOben}>{texte.ausprobierenHinweis}</p>
       )}

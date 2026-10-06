@@ -1,0 +1,74 @@
+import { describe, expect, it } from 'vitest';
+import { adressProbleme } from '../../model/adressen';
+import { ladeNetz, type NetzDatei } from '../../model/datei';
+import { dnsEintragProbleme } from '../../model/dienste';
+import { Simulation } from '../../sim/simulation';
+import { beispiele } from './index';
+
+function lade(id: string): NetzDatei {
+  const b = beispiele.find((x) => x.id === id)!;
+  const ergebnis = ladeNetz(JSON.stringify(b.daten));
+  if (!ergebnis.ok) throw new Error(`${id}: ${ergebnis.meldung}`);
+  return ergebnis.netz;
+}
+
+function bisZumEnde(sim: Simulation) {
+  for (let i = 0; i < 80 && sim.aktiv; i++) sim.schritt();
+}
+
+describe('Beispielnetze', () => {
+  it.each(beispiele.map((b) => b.id))('%s ist eine gültige Netzwerkstatt-Datei', (id) => {
+    expect(() => lade(id)).not.toThrow();
+  });
+
+  it('haben eindeutige IDs', () => {
+    expect(new Set(beispiele.map((b) => b.id)).size).toBe(beispiele.length);
+  });
+
+  it('Schulnetz: Die Website ist sofort erreichbar', () => {
+    const netz = lade('schulnetz-web-dns');
+    expect(adressProbleme(netz).size).toBe(0);
+    const sim = new Simulation(netz);
+    sim.aufrufen('g1', 'www.schule.test');
+    bisZumEnde(sim);
+    expect(sim.browser('g1')).toMatchObject({ phase: 'fertig', status: 200 });
+  });
+
+  it('Fehlersuche: enthält genau die drei beabsichtigten Fehler', () => {
+    const netz = lade('fehlersuche-webseite');
+    // 1. Computer 2 hat dieselbe IP-Adresse wie der Webserver
+    expect(adressProbleme(netz).get('g2')).toMatchObject([{ art: 'ip-doppelt' }]);
+    // 2. Computer 1 fragt einen DNS-Server, den es nicht gibt
+    expect(netz.geraete.find((g) => g.id === 'g1')?.dnsServer).toBe('192.168.0.4');
+    // 3. Tippfehler im DNS-Eintrag (gültige, aber falsche Domain)
+    const dns = netz.geraete.find((g) => g.id === 'g5')?.dienste?.[0];
+    expect(dns?.art === 'dns-server' && dns.eintraege[0]?.domain).toBe('www.schule.tset');
+    expect(dns?.art === 'dns-server' && dnsEintragProbleme(dns.eintraege)).toEqual([[]]);
+
+    const sim = new Simulation(netz);
+    sim.aufrufen('g1', 'www.schule.test');
+    bisZumEnde(sim);
+    expect(sim.browser('g1')).toMatchObject({ phase: 'fehler', fehler: { grund: 'keine-antwort' } });
+  });
+
+  it('Fehlersuche: nach Behebung der drei Fehler lädt die Seite', () => {
+    const netz = lade('fehlersuche-webseite');
+    const behoben: NetzDatei = {
+      ...netz,
+      geraete: netz.geraete.map((g) => {
+        if (g.id === 'g1') return { ...g, dnsServer: '192.168.0.3' };
+        if (g.id === 'g2') return { ...g, ip: '192.168.0.11' };
+        if (g.id === 'g5')
+          return {
+            ...g,
+            dienste: [{ art: 'dns-server', eintraege: [{ domain: 'www.schule.test', ip: '192.168.0.2' }] }],
+          };
+        return g;
+      }),
+    };
+    const sim = new Simulation(behoben);
+    sim.aufrufen('g1', 'www.schule.test');
+    bisZumEnde(sim);
+    expect(sim.browser('g1')).toMatchObject({ phase: 'fertig', status: 200 });
+  });
+});

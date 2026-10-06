@@ -1,0 +1,49 @@
+{
+  "format": "netzwerkstatt",
+  "version": 1,
+  "stufe": "7-8",
+  "titel": "Heimnetz mit WLAN",
+  "geraete": [
+    {
+      "id": "g1",
+      "typ": "computer",
+      "name": "Laptop",
+      "position": { "x": 0, "y": 0 },
+      "ip": "192.168.178.20",
+      "dienste": [{ "art": "browser" }]
+    },
+    { "id": "g2", "typ": "switch", "name": "Switch", "position": { "x": 260, "y": 0 } },
+    { "id": "g3", "typ": "access-point", "name": "Access Point", "position": { "x": 260, "y": 240 } },
+    {
+      "id": "g4",
+      "typ": "smartphone",
+      "name": "Smartphone",
+      "position": { "x": 60, "y": 460 },
+      "ip": "192.168.178.30",
+      "dienste": [{ "art": "browser" }]
+    },
+    {
+      "id": "g5",
+      "typ": "spielkonsole",
+      "name": "Spielkonsole",
+      "position": { "x": 460, "y": 460 },
+      "ip": "192.168.178.31",
+      "dienste": [{ "art": "browser" }]
+    },
+    {
+      "id": "g6",
+      "typ": "computer",
+      "name": "PC im Arbeitszimmer",
+      "position": { "x": 520, "y": 0 },
+      "ip": "192.168.178.21",
+      "dienste": [{ "art": "browser" }]
+    }
+  ],
+  "leitungen": [
+    { "id": "l1", "art": "kabel", "von": "g1", "nach": "g2" },
+    { "id": "l2", "art": "kabel", "von": "g3", "nach": "g2" },
+    { "id": "l3", "art": "wlan", "von": "g4", "nach": "g3" },
+    { "id": "l4", "art": "wlan", "von": "g5", "nach": "g3" },
+    { "id": "l5", "art": "kabel", "von": "g6", "nach": "g2" }
+  ]
+}

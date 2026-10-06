@@ -29,6 +29,9 @@ interface AppZustand {
   auswahl: Auswahl;
   verbindungsart: LeitungsArt;
   meldung: Meldung;
+  /** Arbeitsauftrag des zuletzt geöffneten Beispiels (wird nicht gespeichert; Aufgabenmodus folgt in Phase 5). */
+  auftrag: { titel: string; text: string; sichtbar: boolean } | null;
+  beispieleOffen: boolean;
 
   setzeStufe: (stufe: StufeId) => void;
   setzeModus: (modus: Modus) => void;
@@ -54,7 +57,9 @@ interface AppZustand {
 
   rueckgaengig: () => void;
   wiederholen: () => void;
-  ersetzeNetz: (netz: NetzDatei) => void;
+  ersetzeNetz: (netz: NetzDatei, auftrag?: { titel: string; text: string }) => void;
+  setzeAuftragSichtbar: (sichtbar: boolean) => void;
+  setzeBeispieleOffen: (offen: boolean) => void;
 }
 
 /** Fügt den aktuellen Zustand dem Verlauf hinzu und leert die Wiederholen-Liste. */
@@ -86,6 +91,8 @@ export const useApp = create<AppZustand>()((set, get) => ({
   auswahl: null,
   verbindungsart: 'kabel',
   meldung: null,
+  auftrag: null,
+  beispieleOffen: false,
 
   setzeStufe: (stufe) => set((z) => ({ netz: { ...z.netz, stufe } })),
   setzeModus: (modus) => set({ modus }),
@@ -169,5 +176,15 @@ export const useApp = create<AppZustand>()((set, get) => ({
       return { netz: naechster, vergangenheit: [...z.vergangenheit, z.netz], zukunft: rest, auswahl: null };
     }),
 
-  ersetzeNetz: (netz) => set({ netz, vergangenheit: [], zukunft: [], auswahl: null }),
+  ersetzeNetz: (netz, auftrag) =>
+    set({
+      netz,
+      vergangenheit: [],
+      zukunft: [],
+      auswahl: null,
+      modus: 'aufbauen',
+      auftrag: auftrag ? { ...auftrag, sichtbar: true } : null,
+    }),
+  setzeAuftragSichtbar: (sichtbar) => set((z) => ({ auftrag: z.auftrag && { ...z.auftrag, sichtbar } })),
+  setzeBeispieleOffen: (beispieleOffen) => set({ beispieleOffen }),
 }));

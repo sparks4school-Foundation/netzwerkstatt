@@ -2,6 +2,8 @@ import { ReactFlowProvider } from '@xyflow/react';
 import { useEffect } from 'react';
 import { zwischenspeicherLaden, zwischenspeichern } from './ui/dateiAktionen';
 import { Arbeitsflaeche } from './ui/Arbeitsflaeche';
+import { Auftrag } from './ui/Auftrag';
+import { BeispieleDialog } from './ui/BeispieleDialog';
 import { Bausteine } from './ui/Bausteine';
 import { Eigenschaften } from './ui/Eigenschaften';
 import { Kopfleiste } from './ui/Kopfleiste';
@@ -23,6 +25,7 @@ export function App() {
     <ReactFlowProvider>
       <div className={styles.app}>
         <Kopfleiste />
+        <Auftrag />
         <div className={styles.arbeitsbereich}>
           {bearbeitbar && <Bausteine />}
           <Arbeitsflaeche />
@@ -30,6 +33,7 @@ export function App() {
         </div>
         {!bearbeitbar && <Protokoll />}
         <Meldung />
+        <BeispieleDialog />
         <UpdateHinweis />
       </div>
     </ReactFlowProvider>
