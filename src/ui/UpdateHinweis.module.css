@@ -1,0 +1,21 @@
+.hinweis {
+  position: fixed;
+  right: var(--abstand-4);
+  bottom: max(var(--abstand-4), env(safe-area-inset-bottom));
+  left: var(--abstand-4);
+  z-index: 10;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--abstand-3);
+  max-width: 32rem;
+  margin-left: auto;
+  padding: var(--abstand-3) var(--abstand-4);
+  border: 2px solid var(--farbe-text);
+  border-radius: var(--radius);
+  background: var(--farbe-hintergrund);
+}
+
+.hinweis span {
+  flex: 1;
+}

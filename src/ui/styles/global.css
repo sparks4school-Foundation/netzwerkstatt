@@ -1,0 +1,54 @@
+@import './tokens.css';
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--farbe-hintergrund);
+  color: var(--farbe-text);
+  font-family: var(--schrift);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
+  /* Kein Doppeltipp-Zoom auf Tablets; Pinch-Zoom bleibt in der Arbeitsfläche erhalten. */
+  touch-action: manipulation;
+}
+
+:focus-visible {
+  outline: 3px solid var(--farbe-fokus);
+  outline-offset: 2px;
+}
+
+button {
+  font: inherit;
+  min-height: var(--touch-min);
+  min-width: var(--touch-min);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+.visuell-versteckt {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

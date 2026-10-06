@@ -1,0 +1,19 @@
+.flaeche {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.hinweis {
+  position: absolute;
+  inset: var(--abstand-6) var(--abstand-4) auto;
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: var(--abstand-3) var(--abstand-4);
+  border: 1px dashed var(--farbe-rand);
+  border-radius: var(--radius);
+  background: var(--farbe-flaeche);
+  color: var(--farbe-text-leise);
+  text-align: center;
+  pointer-events: none;
+}

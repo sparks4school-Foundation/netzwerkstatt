@@ -1,0 +1,44 @@
+.gruppe {
+  display: inline-flex;
+  margin: 0;
+  padding: 2px;
+  border: 1px solid var(--farbe-rand);
+  border-radius: var(--radius);
+  background: var(--farbe-flaeche);
+}
+
+.option {
+  position: relative;
+  display: flex;
+}
+
+.option input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  margin: 0;
+  cursor: pointer;
+}
+
+.option span {
+  display: flex;
+  align-items: center;
+  min-height: var(--touch-min);
+  padding: 0 var(--abstand-4);
+  border-radius: calc(var(--radius) - 2px);
+  border: 2px solid transparent;
+  white-space: nowrap;
+}
+
+/* Auswahl: Farbe UND Fettdruck UND Rahmen, damit sie nicht nur über Farbe erkennbar ist. */
+.option input:checked + span {
+  background: var(--farbe-akzent);
+  color: var(--farbe-akzent-text);
+  font-weight: 700;
+  border-color: var(--farbe-text);
+}
+
+.option input:focus-visible + span {
+  outline: 3px solid var(--farbe-fokus);
+  outline-offset: 2px;
+}
