@@ -6,12 +6,17 @@ async function hinzufuegen(page: Page, ...namen: string[]) {
 }
 
 const knoten = (page: Page, name: string) => page.locator('.react-flow__node', { hasText: name });
+
+/** Wie Schüler:innen: Auswahl aufheben (Blatt schließt) und „Ganzes Netz anzeigen“, dann Gerät antippen. */
+async function geraetAntippen(page: Page, name: string) {
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: 'Ganzes Netz anzeigen' }).click();
+  await knoten(page, name).click();
+}
 const leitungen = (page: Page) => page.locator('.react-flow__edge');
 
 async function verbindeUeberPanel(page: Page, von: string, nach: string, art: 'Kabel' | 'WLAN') {
-  // Auswahl aufheben: Auf Tablets könnte das Eigenschaften-Blatt sonst das Gerät verdecken.
-  await page.keyboard.press('Escape');
-  await knoten(page, von).click();
+  await geraetAntippen(page, von);
   await page.getByLabel('Verbinden mit').selectOption({ label: nach });
   await page.getByLabel('per').selectOption({ label: art });
   await page.getByRole('button', { name: 'Verbinden', exact: true }).click();
@@ -61,8 +66,7 @@ test('Gerät umbenennen und per Entf-Taste entfernen', async ({ page }) => {
   await page.getByLabel('Name').fill('Webserver Schule');
   await page.getByLabel('Name').press('Enter');
   await expect(knoten(page, 'Webserver Schule')).toBeVisible();
-  await page.keyboard.press('Escape');
-  await knoten(page, 'Webserver Schule').click();
+  await geraetAntippen(page, 'Webserver Schule');
   await page.keyboard.press('Delete');
   await expect(page.locator('.react-flow__node')).toHaveCount(0);
 });
