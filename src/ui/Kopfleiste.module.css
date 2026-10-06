@@ -2,8 +2,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--abstand-3);
+  gap: var(--abstand-2) var(--abstand-4);
   padding: var(--abstand-2) max(var(--abstand-4), env(safe-area-inset-right)) var(--abstand-2)
     max(var(--abstand-4), env(safe-area-inset-left));
   border-bottom: 1px solid var(--farbe-rand);
@@ -15,8 +14,66 @@
   font-size: 1.25rem;
 }
 
+.aktionen {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--abstand-1);
+}
+
+.aktionen button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--abstand-1);
+  padding: 0 var(--abstand-3);
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: none;
+  color: var(--farbe-text);
+  cursor: pointer;
+}
+
+.aktionen button:hover:not(:disabled) {
+  border-color: var(--farbe-rand);
+  background: var(--farbe-flaeche);
+}
+
+.aktionen button:disabled {
+  color: var(--farbe-text-leise);
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.trenner {
+  width: 1px;
+  height: 24px;
+  margin: 0 var(--abstand-1);
+  background: var(--farbe-rand);
+}
+
 .steuerung {
   display: flex;
   flex-wrap: wrap;
   gap: var(--abstand-3);
+  margin-left: auto;
+}
+
+/* Schmale Bildschirme: Rückgängig/Wiederholen nur als Symbol, Text bleibt für Screenreader erhalten. */
+@media (max-width: 720px) {
+  .langtext {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .aktionen button {
+    padding: 0 var(--abstand-2);
+  }
+
+  .steuerung {
+    margin-left: 0;
+  }
 }

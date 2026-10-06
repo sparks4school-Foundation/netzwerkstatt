@@ -1,0 +1,100 @@
+.palette {
+  display: flex;
+  flex-direction: column;
+  gap: var(--abstand-4);
+  padding: var(--abstand-3);
+  border-right: 1px solid var(--farbe-rand);
+  background: var(--farbe-flaeche);
+  overflow-y: auto;
+}
+
+.gruppe {
+  display: flex;
+  flex-direction: column;
+  gap: var(--abstand-2);
+}
+
+.titel {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--farbe-text-leise);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.liste {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--abstand-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.baustein {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 100%;
+  min-height: 72px;
+  padding: var(--abstand-2);
+  border: 1px solid var(--farbe-rand);
+  border-radius: var(--radius);
+  background: var(--farbe-hintergrund);
+  color: var(--farbe-text);
+  font-size: 0.8125rem;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.baustein:hover {
+  border-color: var(--farbe-akzent);
+}
+
+.baustein:active {
+  transform: scale(0.97);
+}
+
+/* Tablets: schmale Spalte mit einem Baustein pro Zeile. */
+@media (min-width: 721px) and (max-width: 1099px) {
+  .palette {
+    padding: var(--abstand-2);
+  }
+
+  .liste {
+    grid-template-columns: 1fr;
+  }
+
+  .titel {
+    font-size: 0.6875rem;
+    text-align: center;
+  }
+
+  .verbindung fieldset {
+    flex-direction: column;
+  }
+}
+
+/* Schmale Bildschirme: Palette als waagerechte, scrollbare Leiste oben. */
+@media (max-width: 720px) {
+  .palette {
+    flex-direction: row;
+    align-items: flex-end;
+    border-right: 0;
+    border-bottom: 1px solid var(--farbe-rand);
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .liste {
+    display: flex;
+  }
+
+  .baustein {
+    width: 84px;
+    min-height: 64px;
+  }
+}

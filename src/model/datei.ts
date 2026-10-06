@@ -34,18 +34,33 @@ export const leitungSchema = z.object({
   nach: id,
 });
 
-export const netzDateiSchema = z.object({
-  format: z.literal(DATEI_FORMAT),
-  version: z.literal(DATEI_VERSION),
-  stufe: z.enum(stufen),
-  titel: z.string().default(''),
-  geraete: z.array(geraetSchema),
-  leitungen: z.array(leitungSchema),
-});
+export const netzDateiSchema = z
+  .object({
+    format: z.literal(DATEI_FORMAT),
+    version: z.literal(DATEI_VERSION),
+    stufe: z.enum(stufen),
+    titel: z.string().default(''),
+    geraete: z.array(geraetSchema),
+    leitungen: z.array(leitungSchema),
+  })
+  .superRefine((netz, ctx) => {
+    const ids = new Set<string>();
+    for (const g of netz.geraete) {
+      if (ids.has(g.id)) ctx.addIssue({ code: 'custom', message: `Doppelte Geräte-ID ${g.id}` });
+      ids.add(g.id);
+    }
+    for (const l of netz.leitungen) {
+      if (!ids.has(l.von) || !ids.has(l.nach)) {
+        ctx.addIssue({ code: 'custom', message: `Leitung ${l.id} verweist auf ein unbekanntes Gerät` });
+      }
+    }
+  });
 
 export type NetzDatei = z.infer<typeof netzDateiSchema>;
 export type Geraet = z.infer<typeof geraetSchema>;
+export type GeraetTyp = z.infer<typeof geraetTypSchema>;
 export type Leitung = z.infer<typeof leitungSchema>;
+export type LeitungsArt = Leitung['art'];
 
 export type LadeErgebnis = { ok: true; netz: NetzDatei } | { ok: false; meldung: string };
 

@@ -1,0 +1,142 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--abstand-3);
+  width: 300px;
+  padding: var(--abstand-3) var(--abstand-4);
+  border-left: 1px solid var(--farbe-rand);
+  background: var(--farbe-hintergrund);
+  overflow-y: auto;
+}
+
+.kopf {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.titel {
+  margin: 0;
+  font-size: 1.0625rem;
+}
+
+.schliessen {
+  border: 0;
+  background: none;
+  color: var(--farbe-text);
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.inhalt {
+  display: flex;
+  flex-direction: column;
+  gap: var(--abstand-4);
+}
+
+.feld {
+  display: flex;
+  flex-direction: column;
+  gap: var(--abstand-1);
+  margin: 0;
+}
+
+.feld > span {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--farbe-text-leise);
+}
+
+.wert {
+  margin: 0;
+}
+
+.zeile {
+  display: flex;
+  gap: var(--abstand-2);
+}
+
+.zeile select:first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.panel input,
+.panel select {
+  min-height: var(--touch-min);
+  padding: 0 var(--abstand-2);
+  border: 1px solid var(--farbe-rand);
+  border-radius: 6px;
+  background: var(--farbe-hintergrund);
+  color: var(--farbe-text);
+  font: inherit;
+}
+
+.panel form button,
+.entfernen {
+  border: 1px solid var(--farbe-rand);
+  border-radius: var(--radius);
+  background: var(--farbe-flaeche);
+  color: var(--farbe-text);
+  cursor: pointer;
+}
+
+.panel form button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.entfernen {
+  border-color: var(--farbe-fehler);
+  color: var(--farbe-fehler);
+  font-weight: 600;
+}
+
+.leitungsliste {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.link {
+  min-height: 36px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--farbe-akzent);
+  text-align: left;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* Unter 1100 px: Blatt von unten über der Arbeitsfläche; ohne Auswahl ausgeblendet. */
+@media (max-width: 1099px) {
+  .panel[data-leer] {
+    display: none;
+  }
+
+  .panel {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 5;
+    width: auto;
+    max-height: 45dvh;
+    padding-bottom: max(var(--abstand-4), env(safe-area-inset-bottom));
+    border-top: 2px solid var(--farbe-text);
+    border-left: 0;
+    border-radius: 12px 12px 0 0;
+    box-shadow: 0 -4px 16px rgb(0 0 0 / 0.15);
+  }
+}
+
+/* Tablets: Blatt rechts unten, nicht über die ganze Breite. */
+@media (min-width: 721px) and (max-width: 1099px) {
+  .panel {
+    left: auto;
+    width: 360px;
+    border-left: 2px solid var(--farbe-text);
+    border-radius: 12px 0 0 0;
+  }
+}

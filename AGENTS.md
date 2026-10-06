@@ -4,8 +4,8 @@ Diese Datei ist die zentrale Projektbeschreibung für Menschen **und** KI-Agente
 Sie enthält Ziel, Anforderungen, Architekturentscheidungen, Konventionen und Roadmap.
 Bei Widersprüchen zwischen Code und dieser Datei: nachfragen, dann diese Datei aktualisieren.
 
-> Status: **Phase 0 (Grundgerüst) umgesetzt** (Stand 2026-10-06). Nächster Schritt: Phase 1 (Editor).
-> Repository: https://github.com/sparks4school-Foundation/netzwerkstatt (öffentlich)
+> Status: **Phase 0 gemergt, Phase 1 (Editor) umgesetzt** auf Branch `phase-1-editor` (Stand 2026-10-06). Nächster Schritt: Phase 2 (Engine-Kern).
+> Repository: https://github.com/sparks4school-Foundation/netzwerkstatt (öffentlich) · Live: https://sparks4school-foundation.github.io/netzwerkstatt/
 
 ## 0. Schnellstart für Agenten
 
@@ -225,7 +225,19 @@ So bleibt die Simulation testbar, und später sind andere Oberflächen (z. B. Dr
 - Keine personenbezogenen Daten im Format (kein Name, keine Klasse, keine Geräte-IDs des echten Geräts).
 - Das Schema wird zusätzlich als JSON-Schema veröffentlicht (`/schema/`), damit andere Tools es nutzen können.
 
-### 5.5 Aufgabenmodus
+### 5.5 Editor (Phase 1)
+
+- **Controlled Flow:** Die Wahrheit liegt im Zustand-Store (`src/ui/store.ts`, Feld `netz`). React Flow erhält daraus abgeleitete Knoten/Kanten und meldet Änderungen zurück. Nie Daten nur in React Flow halten.
+- **Bearbeitungen** laufen über reine Funktionen in `src/model/netz.ts` (liefern neues Objekt). Der Store legt vorher den alten Stand in `vergangenheit` ab → Rückgängig/Wiederholen (max. 100 Schritte). Beim Ziehen eines Geräts wird nur beim Start ein Verlaufseintrag angelegt.
+- **Verbindungsregeln** (`pruefeVerbindung`): Endgeräte haben genau einen Anschluss (Kabel _oder_ WLAN); Smartphone nur WLAN, Server nur Kabel; WLAN nur zwischen Access Point und Endgerät; Access Point hat ein Kabel (Uplink); Switch/Router beliebig viele Kabel. Gründe werden in `src/content/meldungen.ts` zu verständlichen Sätzen.
+- **Verbinden** geht auf drei Wegen: vom Anschlusspunkt (Ecke unten rechts) ziehen und irgendwo auf dem Zielgerät loslassen; Anschlusspunkte nacheinander antippen; per Tastatur im Eigenschaften-Panel („Verbinden mit“). Beim Ziehen wird automatisch die passende Art gewählt, wenn ein Gerät die eingestellte Art nicht kann.
+- **Geräte hinzufügen:** Antippen/Klicken/Enter auf einen Baustein legt das Gerät in der Mitte ab (`freiePosition` sucht spiralförmig einen freien Platz); mit der Maus auch per Drag & Drop. Liegt das neue Gerät außerhalb des sichtbaren Bereichs, schwenkt die Ansicht dorthin.
+- **Darstellung:** Kabel durchgezogen, WLAN gepunktet + Beschriftung „WLAN“; Auswahl über dickeren Rahmen + Ring (nicht nur Farbe). Gerätesymbole sind eigene SVGs (`src/ui/GeraetIcon.tsx`).
+- **Layout:** ≥ 1100 px: Palette | Fläche | Eigenschaften (immer sichtbar). 721–1099 px (Tablets): schmale Palette, Eigenschaften als Blatt rechts unten. ≤ 720 px: Palette als Leiste oben, Eigenschaften als Blatt unten.
+- **Tastenkürzel:** Strg/Cmd+Z, Strg/Cmd+Umschalt+Z bzw. Strg+Y, Entf/Rücktaste (Auswahl entfernen), Escape (Auswahl aufheben); Pfeiltasten verschieben das ausgewählte Gerät (React Flow).
+- **Speichern:** Datei-Download `*.netzwerkstatt.json`; Öffnen per Dateiauswahl. Zusätzlich automatische Zwischenspeicherung im `localStorage` (nur das Netz).
+
+### 5.6 Aufgabenmodus
 
 - Lehrkraft baut ein Netz, schaltet „Aufgabe erstellen“ ein und legt fest: Arbeitsauftrag (Text), Hilfestufen (1–3, schrittweise aufdeckbar), welche Elemente gesperrt sind, optional eingebaute Fehler und automatische Prüfbedingungen (z. B. „Browser auf PC-1 lädt www.schule.test“).
 - Export als normale JSON-Datei → Verteilung über Moodle/Schulplattform/USB.
@@ -278,7 +290,7 @@ So bleibt die Simulation testbar, und später sind andere Oberflächen (z. B. Dr
 | Phase                 | Inhalt                                                                                                                                                                         | Deckt ab                                    |
 | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------- |
 | 0 – Grundgerüst ✅    | Repo, Vite/TS/React, Lint, Tests, CI, PWA-Hülle, Design-Tokens, Lizenz                                                                                                         | Technik                                     |
-| 1 – Editor            | Geräte platzieren/verbinden (Touch + Tastatur), Eigenschaften-Panel, Undo, Speichern/Laden JSON                                                                                | 7/8 TK 2                                    |
+| 1 – Editor ✅         | Geräte platzieren/verbinden (Touch + Tastatur), Eigenschaften-Panel, Undo, Speichern/Laden JSON                                                                                | 7/8 TK 2                                    |
 | 2 – Engine-Kern       | Event-Queue, Switch, IP im lokalen Netz, „Nachricht senden“, Animation, Pause/Schritt, Protokoll, Erkennung doppelter IP                                                       | 7/8 TK 3                                    |
 | 3 – Dienste (**MVP**) | Dienste installieren, Webserver mit HTML-Editor, Browser, DNS-Server, Namensauflösung Schritt für Schritt, Dienste-Ansicht                                                     | 7/8 TK 1, 4, 5 → **erster Unterrichtstest** |
 | 4 – Stufe 11          | Router + Routingtabellen, mehrere Netze, private/öffentliche Adressen (vereinfachtes NAT), Schichtenansicht, Pakete zerlegen/Verlust/Neuzusammensetzung, DHCP, Sequenzdiagramm | 11 TK 1–7                                   |

@@ -6,7 +6,7 @@
 
 .hinweis {
   position: absolute;
-  inset: var(--abstand-6) var(--abstand-4) auto;
+  inset: 30% var(--abstand-4) auto;
   max-width: 40rem;
   margin: 0 auto;
   padding: var(--abstand-3) var(--abstand-4);

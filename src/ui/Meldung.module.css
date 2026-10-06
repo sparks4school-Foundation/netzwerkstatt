@@ -1,0 +1,49 @@
+.meldung {
+  position: fixed;
+  bottom: max(var(--abstand-6), env(safe-area-inset-bottom));
+  left: 50%;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: var(--abstand-3);
+  width: min(560px, calc(100% - 2 * var(--abstand-4)));
+  padding: var(--abstand-2) var(--abstand-3);
+  border: 2px solid var(--farbe-text);
+  border-radius: var(--radius);
+  background: var(--farbe-hintergrund);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.18);
+  transform: translateX(-50%);
+}
+
+.meldung[data-art='fehler'] {
+  border-color: var(--farbe-fehler);
+  border-left-width: 8px;
+}
+
+.symbol {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--farbe-text);
+  color: var(--farbe-hintergrund);
+  font-weight: 700;
+}
+
+.meldung[data-art='fehler'] .symbol {
+  background: var(--farbe-fehler);
+}
+
+.text {
+  flex: 1;
+}
+
+.meldung button {
+  border: 1px solid var(--farbe-rand);
+  border-radius: 6px;
+  background: var(--farbe-flaeche);
+  color: var(--farbe-text);
+  cursor: pointer;
+}

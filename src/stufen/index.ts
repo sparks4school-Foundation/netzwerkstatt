@@ -1,3 +1,4 @@
+import type { GeraetTyp } from '../model/datei';
 import type { StufeId } from '../model/stufe';
 
 /**
@@ -12,7 +13,14 @@ export interface StufenKonfiguration {
   zeigeRoutingtabelle: boolean;
   zeigePorts: boolean;
   zeigeSequenzdiagramm: boolean;
+  /** Bausteine in der Palette, in dieser Reihenfolge. */
+  bausteine: { endgeraete: GeraetTyp[]; verteiler: GeraetTyp[] };
 }
+
+const alleBausteine: StufenKonfiguration['bausteine'] = {
+  endgeraete: ['computer', 'smartphone', 'spielkonsole', 'server'],
+  verteiler: ['switch', 'router', 'access-point'],
+};
 
 export const stufenKonfiguration: Record<StufeId, StufenKonfiguration> = {
   '7-8': {
@@ -23,6 +31,7 @@ export const stufenKonfiguration: Record<StufeId, StufenKonfiguration> = {
     zeigeRoutingtabelle: false,
     zeigePorts: false,
     zeigeSequenzdiagramm: false,
+    bausteine: alleBausteine,
   },
   '11': {
     id: '11',
@@ -32,5 +41,6 @@ export const stufenKonfiguration: Record<StufeId, StufenKonfiguration> = {
     zeigeRoutingtabelle: true,
     zeigePorts: true,
     zeigeSequenzdiagramm: true,
+    bausteine: alleBausteine,
   },
 };

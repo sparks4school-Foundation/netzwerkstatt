@@ -6,10 +6,65 @@ export const texte = {
   modusAufbauen: 'Aufbauen',
   modusAusprobieren: 'Ausprobieren',
   modusWaehlen: 'Modus',
-  platzhalterArbeitsflaeche:
-    'Hier entsteht die Arbeitsfläche für den Netzplan. In der nächsten Phase kannst du Geräte platzieren und verbinden.',
+  leereArbeitsflaeche:
+    'Tippe links auf ein Gerät, um es hier abzulegen. Verbinde Geräte, indem du vom Punkt an einem Gerät zu einem anderen ziehst oder tippst.',
+  arbeitsflaeche: 'Arbeitsfläche Netzplan',
+  bausteine: 'Bausteine',
+  endgeraete: 'Endgeräte',
+  verteiler: 'Verteiler',
+  verbindungsart: 'Verbindung',
+  geraetHinzufuegen: (name: string) => `${name} hinzufügen`,
+  datei: 'Datei',
+  neu: 'Neu',
+  oeffnen: 'Öffnen',
+  speichern: 'Speichern',
+  rueckgaengig: 'Rückgängig',
+  wiederholen: 'Wiederholen',
+  eigenschaften: 'Eigenschaften',
+  name: 'Name',
+  geraetetyp: 'Gerätetyp',
+  leitungen: 'Leitungen',
+  keineLeitungen: 'Noch nicht verbunden.',
+  verbindenMit: 'Verbinden mit',
+  verbindenPer: 'per',
+  verbinden: 'Verbinden',
+  bitteWaehlen: 'Gerät wählen …',
+  entfernen: 'Entfernen',
+  geraetEntfernen: 'Gerät entfernen',
+  leitungEntfernen: 'Leitung entfernen',
+  leitungZwischen: (a: string, b: string) => `${a} ↔ ${b}`,
+  anschlussPunkt: (name: string) => `Anschluss von ${name}: hier ziehen oder tippen, um zu verbinden`,
+  auswahlAufheben: 'Auswahl aufheben',
+  nichtsAusgewaehlt: 'Wähle ein Gerät oder eine Leitung aus, um Details zu sehen und es zu bearbeiten.',
   offlineBereit: 'Die Netzwerkstatt funktioniert jetzt auch ohne Internet.',
   updateVerfuegbar: 'Eine neue Version ist verfügbar.',
   neuLaden: 'Neu laden',
   schliessen: 'Schließen',
 } as const;
+
+/** Deutsche Screenreader-Texte für die Netzplan-Bibliothek (React Flow). */
+export const netzplanAriaTexte = {
+  'node.a11yDescription.default':
+    'Enter oder Leertaste wählt das Gerät aus. Entf entfernt es, Escape bricht ab.',
+  'node.a11yDescription.keyboardDisabled':
+    'Enter oder Leertaste wählt das Gerät aus. Danach verschieben es die Pfeiltasten. Entf entfernt es, Escape bricht ab.',
+  'node.a11yDescription.ariaLiveMessage': ({
+    direction,
+    x,
+    y,
+  }: {
+    direction: string;
+    x: number;
+    y: number;
+  }) =>
+    `Gerät nach ${({ up: 'oben', down: 'unten', left: 'links', right: 'rechts' } as Record<string, string>)[direction] ?? direction} verschoben, Position ${x}, ${y}`,
+  'edge.a11yDescription.default':
+    'Enter oder Leertaste wählt die Leitung aus. Entf entfernt sie, Escape bricht ab.',
+  'controls.ariaLabel': 'Ansicht steuern',
+  'controls.zoomIn.ariaLabel': 'Vergrößern',
+  'controls.zoomOut.ariaLabel': 'Verkleinern',
+  'controls.fitView.ariaLabel': 'Ganzes Netz anzeigen',
+  'controls.interactive.ariaLabel': 'Bearbeiten sperren oder entsperren',
+  'minimap.ariaLabel': 'Übersichtskarte',
+  'handle.ariaLabel': 'Anschluss',
+};
