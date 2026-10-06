@@ -1,0 +1,55 @@
+.knoten {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 128px;
+  padding: var(--abstand-2) var(--abstand-2) var(--abstand-4);
+  border: 2px solid var(--farbe-rand);
+  border-radius: var(--radius);
+  background: var(--farbe-hintergrund);
+  color: var(--farbe-text);
+  text-align: center;
+  line-height: 1.2;
+}
+
+/* Auswahl: dickerer Rahmen in Akzentfarbe UND Schatten – nicht nur Farbe. */
+.knoten[data-ausgewaehlt] {
+  border-width: 3px;
+  border-color: var(--farbe-akzent);
+  box-shadow:
+    0 0 0 3px var(--farbe-hintergrund),
+    0 0 0 6px var(--farbe-akzent);
+}
+
+.name {
+  font-weight: 600;
+  font-size: 0.875rem;
+  word-break: break-word;
+}
+
+.typ {
+  font-size: 0.75rem;
+  color: var(--farbe-text-leise);
+}
+
+/* Großer Anschlusspunkt für Touch (sichtbar 18 px, Trefferfläche 44 px). */
+/* In der Ecke unten rechts, damit er nicht auf Leitungen und deren Beschriftung (Mitte) liegt. */
+.anschluss:global(.react-flow__handle) {
+  width: 18px;
+  height: 18px;
+  top: auto;
+  right: -10px;
+  bottom: -10px;
+  left: auto;
+  transform: none;
+  border: 2px solid var(--farbe-hintergrund);
+  background: var(--farbe-akzent);
+}
+
+.anschluss:global(.react-flow__handle)::after {
+  content: '';
+  position: absolute;
+  inset: -13px;
+  border-radius: 50%;
+}

@@ -3,3 +3,33 @@
   flex-direction: column;
   height: 100dvh;
 }
+
+.arbeitsbereich {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  /* Beim Ziehen auf Touch/Maus keinen Text markieren; Eingabefelder bleiben normal bedienbar. */
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.arbeitsbereich > aside:first-child {
+  width: 220px;
+  flex: none;
+}
+
+@media (min-width: 721px) and (max-width: 1099px) {
+  .arbeitsbereich > aside:first-child {
+    width: 104px;
+  }
+}
+
+@media (max-width: 720px) {
+  .arbeitsbereich {
+    flex-direction: column;
+  }
+
+  .arbeitsbereich > aside:first-child {
+    width: auto;
+  }
+}

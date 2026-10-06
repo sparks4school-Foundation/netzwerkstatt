@@ -1,0 +1,27 @@
+.leitung:global(.react-flow__edge-path) {
+  stroke: var(--farbe-text);
+  stroke-width: 3;
+}
+
+.leitung:global(.react-flow__edge-path)[data-art='wlan'] {
+  stroke-dasharray: 1 7;
+  stroke-linecap: round;
+  stroke-width: 4;
+}
+
+.leitung:global(.react-flow__edge-path)[data-ausgewaehlt] {
+  stroke: var(--farbe-akzent);
+  stroke-width: 6;
+}
+
+.beschriftung {
+  position: absolute;
+  padding: 0 var(--abstand-1);
+  border: 1px solid var(--farbe-rand);
+  border-radius: 4px;
+  background: var(--farbe-hintergrund);
+  color: var(--farbe-text);
+  font-size: 0.75rem;
+  font-weight: 600;
+  pointer-events: none;
+}

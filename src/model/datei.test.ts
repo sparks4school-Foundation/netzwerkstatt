@@ -26,3 +26,10 @@ describe('Dateiformat', () => {
     if (!ergebnis.ok) expect(ergebnis.meldung).toMatch(/neueren Version/);
   });
 });
+
+describe('Dateiformat – Konsistenz', () => {
+  it('lehnt Leitungen zu unbekannten Geräten ab', () => {
+    const netz = { ...leeresNetz('7-8'), leitungen: [{ id: 'l1', art: 'kabel', von: 'g1', nach: 'g2' }] };
+    expect(ladeNetz(JSON.stringify(netz))).toMatchObject({ ok: false });
+  });
+});
