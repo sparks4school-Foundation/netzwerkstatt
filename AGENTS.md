@@ -1,0 +1,303 @@
+# AGENTS.md – Netzwerkstatt: Netzwerk-Simulator für den Informatikunterricht
+
+Diese Datei ist die zentrale Projektbeschreibung für Menschen **und** KI-Agenten (Claude Code, Codex, Copilot …).
+Sie enthält Ziel, Anforderungen, Architekturentscheidungen, Konventionen und Roadmap.
+Bei Widersprüchen zwischen Code und dieser Datei: nachfragen, dann diese Datei aktualisieren.
+
+> Status: **Phase 0 (Grundgerüst) umgesetzt** (Stand 2026-10-06). Nächster Schritt: Phase 1 (Editor).
+> Repository: https://github.com/sparks4school-Foundation/netzwerkstatt (öffentlich)
+
+## 0. Schnellstart für Agenten
+
+```bash
+npm install
+npm run dev        # http://localhost:5173
+npm run check      # typecheck + lint + format:check + Vitest – muss vor jeder Übergabe grün sein
+npm run test:e2e   # Playwright gegen den Produktions-Build (Desktop-Chrome + iPad/WebKit)
+npm run build      # dist/ (statisch); BASE_PATH=/netzwerkstatt/ für GitHub Pages
+```
+
+- Node ≥ 22 (`.nvmrc`: 24 LTS für CI).
+- Versionsgrenzen: **TypeScript 6.0.x** (typescript-eslint unterstützt TS 7 noch nicht), **ESLint 9** (eslint-plugin-jsx-a11y unterstützt ESLint 10 noch nicht). Erst anheben, wenn die Plugins nachziehen.
+- Architekturgrenzen werden von ESLint erzwungen (`boundaries/dependencies` in `eslint.config.js`); in `src/sim` und `src/model` sind `window`, `document`, `setTimeout`, `Math.random` und `Date.now` verboten.
+- Bekannt: `npm audit` meldet eine Lücke in `braces` (nur Build-Werkzeug, nicht im ausgelieferten Code).
+
+---
+
+## 1. Ziel in einem Satz
+
+Ein browserbasierter, installationsfreier, DSGVO-konformer Netzwerk-Simulator für den Informatikunterricht
+(Bildungsplan BW: Kl. 7/8 – 3.2.4.2, Kl. 11 – 3.4.4.1), inspiriert von [Filius](https://gitlab.com/filius1/filius),
+aber **deutlich vereinfacht, touch-tauglich und didaktisch gestuft**.
+
+Zielgruppen: Schüler:innen (ohne Login), Lehrkräfte (Aufgaben erstellen/verteilen).
+Begleitmaterialien werden separat angeboten und sind **nicht** Teil dieses Repos.
+
+---
+
+## 2. Grundsatzentscheidung: Filius übernehmen oder neu denken?
+
+**Entscheidung: komplett neu bauen, keine Code-Übernahme. Ideen von Filius übernehmen, Schwächen bewusst vermeiden.**
+
+Begründung:
+
+| Aspekt      | Filius                                                                           | Konsequenz                                                                                                                                                   |
+| ----------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Technik     | Java + Swing-Desktop-UI                                                          | UI ist nicht ins Web portierbar, nur die Ideen.                                                                                                              |
+| Simulation  | Echtzeit mit Java-Threads pro Gerät                                              | Nicht deterministisch, kein sauberes Pausieren/Einzelschritt → Engine muss anders aufgebaut sein (Event-Queue, siehe 5.2).                                   |
+| Lizenz      | GPL (Version vor einer evtl. Übernahme prüfen)                                   | Jede Code- oder Icon-Übernahme würde unser Projekt an die GPL binden. Ideen/Konzepte sind frei → wir übernehmen nur Konzepte, keine Dateien, keine Grafiken. |
+| Datenformat | `.fls` (ZIP mit Java-`XMLEncoder`-XML)                                           | Eigenes, dokumentiertes JSON-Format. Ein Filius-Import ist eine optionale spätere Erweiterung.                                                               |
+| Umfang      | Viele Funktionen (Terminal, E-Mail, Firewall, P2P/Gnutella, Modem, Texteditor …) | Für den Bildungsplan zu viel. Wir bauen nur, was die Teilkompetenzen (TK) brauchen.                                                                          |
+
+### 2.1 Gute Ideen von Filius, die wir übernehmen
+
+- **Trennung Entwurf ↔ Simulation**: erst aufbauen, dann ausprobieren. Bei uns weicher: ein Schalter „Aufbauen / Ausprobieren“, der Zustand geht dabei nicht verloren.
+- **Software auf Geräten „installieren“**: Ein Rechner wird erst durch einen installierten Dienst zum Webserver. Das bildet den Glossar-Unterschied _Server als Dienst_ vs. _Server als Hardware_ direkt ab.
+- **Desktop-Ansicht eines Geräts** mit App-Symbolen (Browser, Webserver, DNS-Server): Schüler:innen „sitzen“ an einem Rechner.
+- **Einfacher Webbrowser und Webserver mit selbst editierbarer HTML-Seite.** Das ist die Muss-Funktion für TK 5.
+- **Einfacher DNS-Server** mit Tabelle Domain → IP-Adresse.
+- **Router mit mehreren Anschlüssen und Routingtabelle** (automatisch oder manuell).
+- **Datenaustausch-Tabelle pro Gerät**, farbig nach Schicht. Bei uns: Kommunikationsprotokoll + Sequenzdiagramm + aufklappbare Schichten.
+- **Leitungen leuchten bei Datenverkehr.** Bei uns: Pakete laufen sichtbar als Objekte über die Leitung.
+- **Geschwindigkeitsregler.**
+- **Speichern als Datei und Weitergeben** (bei uns offenes JSON).
+
+### 2.2 Schwächen von Filius, die wir bewusst anders lösen
+
+- Java-Installation nötig → läuft im Browser, auch auf iPad/Chromebook, offline als PWA.
+- Keine Touch-Bedienung, kleines Desktop-UI → große Touch-Ziele, Drag & Drop, Pinch-Zoom.
+- Kein echtes Pausieren/Einzelschritt → deterministische Simulation mit Zeitlupe, Pause, Schritt vor.
+- Kein Sequenzdiagramm → wird automatisch aus dem Protokoll erzeugt.
+- Keine Klassenstufen-Modi → Stufen 7/8 und 11 blenden Begriffe und Felder ein/aus, dasselbe Netz bleibt nutzbar.
+- Kein Aufgabenmodus → Lehrkräfte können Aufgaben mit Auftrag, Hilfestufen und eingebauten Fehlern verteilen.
+- Technische Fehlermeldungen → verständliche deutsche Meldungen mit Hinweis, wo man nachsehen kann.
+- Kein Undo → Rückgängig/Wiederholen überall.
+- Kein WLAN, keine Smartphones/Spielkonsolen als Bausteine → bei uns vorhanden (Kl. 7/8 TK 2).
+
+---
+
+## 3. Anforderungen (Kurzfassung)
+
+Die vollständige Liste stammt vom Projektinhaber und ist hier verdichtet. TK = Teilkompetenz im Bildungsplan.
+
+### 3.1 Stufe 7/8 – 3.2.4.2 Kommunikationsprinzipien in Rechnernetzen
+
+- TK 1: 2-Schichten-Modell **Infrastruktur / Dienste**, visuell umschaltbar.
+  - _Infrastruktur-Ansicht_: Geräte und physische **Leitungen** (durchgezogen).
+  - _Dienste-Ansicht_: Dienste (Webserver, DNS, Browser als Client) und temporäre logische **Verbindungen** (gestrichelt, mit Beschriftung).
+- TK 2: Bausteine
+  - Endgeräte: Computer, Smartphone, Spielkonsole, Server
+  - Verteiler: Switch, Router, WLAN-Access-Point
+  - Verbindungen: Kabel, WLAN
+- TK 3: IP-Adressen und Domains vergeben; Fehlkonfiguration (doppelte IP, falsches Netz) wird **sichtbar** markiert (Symbol + Text, nicht nur Farbe).
+- TK 4: Namensauflösung als nachvollziehbarer Ablauf: Domain → DNS-Server → IP-Adresse → Webserver.
+- TK 5 (**zentrale Muss-Funktion**): Lokales Rechnernetz mit DNS und Webserver selbst entwerfen und testen; ein einfacher Browser ruft eine selbst erstellte Webseite ab.
+- Optional: Transport- vs. Ende-zu-Ende-Verschlüsselung als „Wer kann die Nachricht lesen?“ pro Station (Brücke zu 3.2.4.1).
+
+### 3.2 Stufe 11 – 3.4.4.1 Schichten und Protokolle
+
+- TK 1, 7: 4-Schichten-Modell (Netzzugang, Vermittlung, Transport, Anwendung). Jede Nachricht lässt sich pro Schicht aufklappen.
+- TK 2: Mehrere Netze verbinden; lokale vs. globale (private vs. öffentliche) Adressen unterscheiden.
+- TK 3: Routing: Routingtabellen bearbeiten, Szenarien durchspielen (Leitungsausfall, Umweg).
+- TK 4: Paketorientierte Übertragung: Zerlegen, unterschiedliche Wege, Reihenfolge, Verlust, Neuzusammensetzung sichtbar.
+- TK 5, 6: DNS und DHCP nachvollziehbar; Ablauf automatisch als vereinfachtes (UML-nahes) **Sequenzdiagramm**.
+
+### 3.3 Didaktische Querschnittsanforderungen
+
+- **Progressive Komplexität**: ein Modus pro Stufe; dasselbe Netz ist in höherer Stufe weiterverwendbar (spiralcurricular).
+- **Blackbox/Whitebox** pro Gerät umschaltbar (nur Verhalten ↔ innerer Zustand wie Routingtabelle, DNS-Einträge, Paketinhalt).
+- **Zeitlupe, Pause, Einzelschritt** + **Kommunikationsprotokoll** („Wer hat wann was an wen geschickt?“).
+- **Testen und Fehlersuche**: Fehler bewusst einbauen (falsche IP, fehlender DNS-Eintrag, getrennte Leitung); verständliche Fehlermeldungen.
+- **Aufgabenmodus** für Lehrkräfte: vorbereitete Netze + Arbeitsauftrag, Diagnoseaufgaben mit fehlerhaften Netzen, Hilfestufen.
+- **Unplugged**: Netzplan und Sequenzdiagramm druck- und exportierbar (SVG/PNG/PDF über Druckansicht).
+- Server-Begriff doppelt: Hardware (Gerät) und Dienst (Software) unterscheidbar darstellen.
+- Leitung (physisch) vs. Verbindung (logisch, temporär) sichtbar unterscheiden.
+
+### 3.4 Verbindliche Begriffe (Glossar, Abschnitt 6.1)
+
+Diese Begriffe sind **exakt so** in der Oberfläche zu verwenden; keine Synonyme erfinden:
+
+> vermaschtes Netz, Client, Server, Cloud, interne/portable Speichermedien, Adressierung, IP-Adresse, Domain,
+> Namensauflösung, DNS, lokales Rechnernetz, Webserver, Schichtenmodell, Adressen, Routing,
+> paketorientierte Datenübertragung, Kommunikationsprotokoll, Protokoll, Sequenzdiagramm
+
+- Alle Begriffe stehen zentral in `src/content/glossar.ts` (Begriff, Kurzdefinition, ab welcher Stufe sichtbar).
+- Tooltips/Infoboxen ziehen ihre Texte **nur** von dort.
+- Oberfläche komplett auf Deutsch. UI-Texte nicht im Code verstreuen, sondern in `src/content/texte.ts` bündeln (erleichtert Korrektur durch Lehrkräfte).
+
+### 3.5 Technische und rechtliche Rahmenbedingungen
+
+- Läuft im Browser, ohne Installation, ohne Java; Schul-PCs, Chromebooks, iPads (Touch). Smartphones: nutzbar, aber kein Hauptziel.
+- **Kein Login, keine personenbezogenen Daten, kein Tracking, keine Cookies**, keine Analytics.
+- **Offline-fähig** (PWA); zur Laufzeit **keine** externen Requests (keine CDNs, keine Google Fonts – Schriften selbst hosten).
+- Speichern/Teilen als offenes **JSON** (Datei-Download/-Upload, Schulplattform/Moodle). Kein Server-Speicher.
+- Open Source.
+- Barrierearm: vollständige Tastaturbedienung, WCAG-AA-Kontraste, keine reine Farbcodierung (immer Symbol/Muster/Text dazu).
+- Läuft auf schwachen Geräten (Performance-Budget, siehe 6.4).
+- Neutrale, stereotypfreie Gestaltung (Gerätenamen, Beispielpersonen, Icons).
+
+### 3.6 Nicht-Ziele
+
+- Keine Interaktion mit echten Netzen (kein Scannen, kein Sniffen, keine echten Sockets). Alles bleibt in der Simulation.
+- Kein vollständiges OSI-Modell, keine Herstellerkonfiguration à la Cisco Packet Tracer.
+- Keine mathematische Kryptographie; Verschlüsselung nur als „lesbar / nicht lesbar“ pro Station.
+- Kein Backend, keine Accounts, keine Cloud-Speicherung.
+- Nicht übernommen aus Filius: Terminal/Kommandozeile, E-Mail, Firewall, Peer-to-Peer, Modem, Texteditor, Dateiexplorer.
+
+### 3.7 Kann-Erweiterungen (später)
+
+- Paritätsbit/Prüfsumme bei gestörten Leitungen (3.3.2.2)
+- Man-in-the-Middle und digitale Zertifikate (3.3.4.2)
+- Kommunikationsformen: synchron/asynchron, 1:1 / 1:n / n:m (3.2.4.2 (6))
+- Import von Filius-`.fls`-Dateien
+
+---
+
+## 4. Tech-Stack
+
+| Bereich                 | Wahl                                                                             | Warum                                                                                                |
+| ----------------------- | -------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Sprache                 | **TypeScript** (strict)                                                          | Datenmodell und Simulation sind komplex → Typen verhindern Fehler.                                   |
+| Build                   | **Vite**                                                                         | Schnell, Standard, statischer Output.                                                                |
+| UI                      | **React 19**                                                                     | Großes Ökosystem, viele potenzielle Mitwirkende. (entschieden)                                       |
+| Netzplan-Editor         | **@xyflow/react (React Flow)**, MIT                                              | Knoten/Kanten, Zoom/Pan, Touch, Tastatur bereits gelöst; rendert SVG/HTML (druck- und exportierbar). |
+| State                   | **Zustand** + Immer, Undo/Redo über Patches                                      | Einfach, ohne Boilerplate.                                                                           |
+| Validierung Dateiformat | **Zod**                                                                          | Schema = Typ = Validierung beim Laden fremder Dateien.                                               |
+| Styling                 | CSS Modules oder Tailwind + CSS-Custom-Properties als Design-Tokens              | Hoher Kontrast/Dark-Mode über Tokens.                                                                |
+| Offline                 | **vite-plugin-pwa** (Workbox)                                                    | Service Worker, installierbar, offline.                                                              |
+| Tests                   | **Vitest** (Engine), **Playwright** (E2E, inkl. iPad-Viewport)                   | Engine muss zu 100 % ohne Browser testbar sein.                                                      |
+| Lint/Format             | ESLint + Prettier, `eslint-plugin-boundaries`                                    | Erzwingt: Engine importiert nichts aus UI.                                                           |
+| Hosting                 | GitHub Pages (Workflow `pages.yml`); jeder andere statische Webspace geht ebenso | Kein Backend nötig. Build = Ordner `dist/`.                                                          |
+
+---
+
+## 5. Architektur
+
+### 5.1 Schichten des Codes
+
+```
+src/
+  model/      Datenmodell (Geräte, Anschlüsse, Leitungen, Dienste), Zod-Schemas, Dateiformat + Migrationen
+  sim/        Simulations-Engine – reines TypeScript, KEIN DOM, KEIN React, deterministisch
+    protocols/  ethernet(vereinfacht), ip, routing, tcp(vereinfacht), udp, dns, dhcp, http
+    devices/    Verhalten je Gerätetyp (Endgerät, Switch, Router, Access Point)
+  ui/         React-Komponenten: Editor, Gerätefenster, Browser, Protokoll, Sequenzdiagramm, Schichtenansicht
+  content/    Glossar, UI-Texte, Fehlermeldungen, Beispiel-/Aufgabennetze (JSON)
+  stufen/     Konfiguration der Klassenstufen-Modi (was ist sichtbar/editierbar)
+```
+
+Grundregel: **`sim/` und `model/` kennen die UI nicht.** Die UI liest Zustand und Ereignisse aus der Engine und zeichnet sie.
+So bleibt die Simulation testbar, und später sind andere Oberflächen (z. B. Druckansicht) einfach.
+
+### 5.2 Simulations-Engine
+
+- **Diskrete Ereignissimulation** mit Event-Queue und simulierter Uhr (Ticks), keine Threads, kein `setTimeout` in der Logik.
+- Ein **Schritt** = eine Nachricht bewegt sich über eine Leitung oder wird von einem Gerät verarbeitet.
+- Die UI steuert die Uhr: Abspielen (mit Geschwindigkeit), Pause, Einzelschritt, Zurückspulen (über gespeicherte Snapshots).
+- Deterministisch: gleicher Ausgangszustand + gleiche Aktionen = gleicher Ablauf. Zufall (Paketverlust, Wegwahl) nur über einen Seed-basierten PRNG.
+- Jede Aktion erzeugt einen **Protokolleintrag** `{zeit, von, an, schicht, protokoll, kurztext, nachricht}`.
+  Daraus werden Kommunikationsprotokoll-Tabelle **und** Sequenzdiagramm generiert.
+- Nachrichten sind **verschachtelte Objekte** (Kapselung):
+  ```ts
+  { netzzugang: { von: 'MAC…', an: 'MAC…' },
+    vermittlung: { quelle: '192.168.0.10', ziel: '192.168.0.2', ttl: 64 },
+    transport: { protokoll: 'TCP', quellport: 49152, zielport: 80, nr: 1 },
+    anwendung: { protokoll: 'HTTP', inhalt: 'GET /index.html' } }
+  ```
+  Die Schichtenansicht klappt genau diese Ebenen auf.
+- Vereinfachungen (bewusst): ARP nur in Stufe 11 sichtbar, TCP ohne Fenster/Congestion (nur Verbindungsaufbau, Nummerierung, Bestätigung, Neusenden), NAT vereinfacht am Heimrouter.
+
+### 5.3 Klassenstufen-Modi (Spiralcurriculum)
+
+- Das **Datenmodell ist immer vollständig** (auch Subnetzmaske, Gateway, MAC, Routingtabelle).
+- Der Modus bestimmt nur **Sichtbarkeit und Automatik**:
+  - **Stufe 7/8**: Subnetzmaske, Gateway, MAC, Ports, Routingtabellen sind ausgeblendet und werden automatisch gesetzt. Sichtbar: IP-Adresse, Domain, Dienste, 2-Schichten-Ansicht.
+  - **Stufe 11**: alles einblendbar, Routingtabellen editierbar, 4-Schichten-Ansicht, Pakete, DHCP, Sequenzdiagramm.
+- Ein in 7/8 gebautes Netz öffnet sich in Stufe 11 unverändert, nur mit mehr Details.
+- Konfiguration in `src/stufen/*.ts` (Liste der sichtbaren Bausteine, Felder, Begriffe, Ansichten).
+
+### 5.4 Dateiformat
+
+- Endung `.netzwerkstatt.json`, MIME `application/json`, UTF-8, menschenlesbar formatiert.
+- Pflichtfelder: `format` (Kennung), `version` (Ganzzahl), `stufe`, `geraete`, `leitungen`.
+- Optional: `aufgabe` (Auftrag, Hilfestufen, gesperrte Elemente, eingebaute Fehler, Prüfbedingungen).
+- Beim Laden: Zod-Validierung → bei alter `version` Migrationen anwenden → verständliche Meldung bei Fehlern.
+- Keine personenbezogenen Daten im Format (kein Name, keine Klasse, keine Geräte-IDs des echten Geräts).
+- Das Schema wird zusätzlich als JSON-Schema veröffentlicht (`/schema/`), damit andere Tools es nutzen können.
+
+### 5.5 Aufgabenmodus
+
+- Lehrkraft baut ein Netz, schaltet „Aufgabe erstellen“ ein und legt fest: Arbeitsauftrag (Text), Hilfestufen (1–3, schrittweise aufdeckbar), welche Elemente gesperrt sind, optional eingebaute Fehler und automatische Prüfbedingungen (z. B. „Browser auf PC-1 lädt www.schule.test“).
+- Export als normale JSON-Datei → Verteilung über Moodle/Schulplattform/USB.
+- Keine Rückmeldung an die Lehrkraft über einen Server (DSGVO); Schüler:innen speichern ihr Ergebnis selbst als Datei.
+
+---
+
+## 6. Konventionen für Entwicklung und Agenten
+
+### 6.1 Allgemein
+
+- Sprache im Code: Bezeichner für Fachbegriffe auf **Deutsch** (`Geraet`, `Leitung`, `Dienst`, `Routingtabelle`), technische Infrastruktur auf Englisch ist erlaubt (`useStore`, `render`). Konsistent bleiben.
+- UI-Texte, Fehlermeldungen und Glossar nur aus `src/content/`.
+- Fehlermeldungen: Was ist passiert? Woran kann es liegen? Wo kann ich nachsehen? Kein Fachjargon über die aktuelle Stufe hinaus.
+  Beispiel: „Der Browser konnte **www.schule.test** nicht finden. Der DNS-Server kennt diese Domain nicht. Tipp: Schau in die Tabelle des DNS-Servers.“
+
+### 6.2 Barrierefreiheit (Pflicht, nicht optional)
+
+- Jede Aktion per Tastatur erreichbar (auch Geräte platzieren und verbinden).
+- Touch-Ziele mind. 44×44 px.
+- Kontrast WCAG AA; Zustände nie nur über Farbe (Symbol + Text + Muster, z. B. gestrichelt).
+- `prefers-reduced-motion` respektieren (Animation durch Schrittanzeige ersetzen).
+
+### 6.3 Datenschutz (Pflicht)
+
+- Keine externen Requests zur Laufzeit. Neue Abhängigkeiten auf Telemetrie/Netzzugriffe prüfen.
+- Kein `localStorage` für personenbezogene Daten; erlaubt ist nur das Zwischenspeichern des aktuellen Netzes und von UI-Einstellungen auf dem Gerät.
+
+### 6.4 Performance-Budget
+
+- Initialer JS-Bundle (gzip) ≤ 300 KB; Ziel: flüssig auf iPad 9. Gen. / einfachem Chromebook mit 50 Geräten im Netz.
+- Engine-Schritt ≤ 2 ms bei 50 Geräten.
+
+### 6.5 Tests
+
+- Jede Protokoll-/Engine-Funktion bekommt Vitest-Tests mit kleinen Beispielnetzen.
+- Für jede TK aus Abschnitt 3 gibt es mindestens ein Beispielnetz in `src/content/beispiele/` und einen E2E-Test.
+
+### 6.6 Git
+
+- **Niemals pushen**, außer der Projektinhaber sagt es ausdrücklich.
+- **Nur committen, wenn ausdrücklich verlangt.**
+- **Keine** `Co-Authored-By`-Zeilen für KI in Commit-Messages.
+- Commit-Messages auf Deutsch oder Englisch, kurz, im Imperativ.
+
+---
+
+## 7. Roadmap
+
+| Phase                 | Inhalt                                                                                                                                                                         | Deckt ab                                    |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------- |
+| 0 – Grundgerüst ✅    | Repo, Vite/TS/React, Lint, Tests, CI, PWA-Hülle, Design-Tokens, Lizenz                                                                                                         | Technik                                     |
+| 1 – Editor            | Geräte platzieren/verbinden (Touch + Tastatur), Eigenschaften-Panel, Undo, Speichern/Laden JSON                                                                                | 7/8 TK 2                                    |
+| 2 – Engine-Kern       | Event-Queue, Switch, IP im lokalen Netz, „Nachricht senden“, Animation, Pause/Schritt, Protokoll, Erkennung doppelter IP                                                       | 7/8 TK 3                                    |
+| 3 – Dienste (**MVP**) | Dienste installieren, Webserver mit HTML-Editor, Browser, DNS-Server, Namensauflösung Schritt für Schritt, Dienste-Ansicht                                                     | 7/8 TK 1, 4, 5 → **erster Unterrichtstest** |
+| 4 – Stufe 11          | Router + Routingtabellen, mehrere Netze, private/öffentliche Adressen (vereinfachtes NAT), Schichtenansicht, Pakete zerlegen/Verlust/Neuzusammensetzung, DHCP, Sequenzdiagramm | 11 TK 1–7                                   |
+| 5 – Unterricht        | Aufgabenmodus, Hilfestufen, Fehler einbauen, Blackbox/Whitebox, Druck/Export (Netzplan, Sequenzdiagramm), Glossar-Tooltips komplett                                            | Querschnitt                                 |
+| 6 – Optional          | Verschlüsselung lesbar/nicht lesbar, Parität/Prüfsumme, MITM/Zertifikate, Kommunikationsformen, Filius-Import                                                                  | Kann                                        |
+
+---
+
+## 8. Entscheidungen
+
+### Getroffen
+
+- [x] Projektname (Arbeitstitel, änderbar): **Netzwerkstatt**. Im README: „inspiriert von Filius“, aber kein „Filius“ im Namen.
+- [x] Lizenz Code: **EUPL-1.2** (europäische Open-Source-Lizenz, Copyleft: Weiterentwicklungen bleiben frei; kompatibel mit GPL).
+- [x] Lizenz Inhalte (Beispielnetze, Aufgaben, Texte, Grafiken): **CC BY-SA 4.0**.
+- [x] UI-Framework: **React**.
+- [x] GitHub: **sparks4school-Foundation/netzwerkstatt**, öffentlich.
+
+### Offen
+
+- [ ] GitHub Pages in den Repo-Einstellungen aktivieren (Quelle: GitHub Actions); später ggf. eigene Domain
+- [ ] Filius-Lizenzversion und Namensnutzung prüfen, bevor auf Filius verwiesen wird

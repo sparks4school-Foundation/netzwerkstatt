@@ -1,0 +1,42 @@
+/* Design-Tokens. Farben erfüllen WCAG AA; Zustände nie nur über Farbe kodieren (AGENTS.md 6.2). */
+:root {
+  --farbe-hintergrund: #ffffff;
+  --farbe-flaeche: #f3f5f8;
+  --farbe-rand: #8a94a3;
+  --farbe-text: #14181f;
+  --farbe-text-leise: #4a5361;
+  --farbe-akzent: #1f4e79;
+  --farbe-akzent-text: #ffffff;
+  --farbe-fokus: #c2410c;
+  --farbe-fehler: #b42318;
+  --farbe-ok: #1e6b3a;
+
+  --schrift: system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
+  --schrift-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  --abstand-1: 4px;
+  --abstand-2: 8px;
+  --abstand-3: 12px;
+  --abstand-4: 16px;
+  --abstand-6: 24px;
+  --radius: 8px;
+  --touch-min: 44px;
+
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --farbe-hintergrund: #11151b;
+    --farbe-flaeche: #1b2129;
+    --farbe-rand: #6b7686;
+    --farbe-text: #eef1f5;
+    --farbe-text-leise: #b3bcc8;
+    --farbe-akzent: #7fb3e6;
+    --farbe-akzent-text: #0b1c2c;
+    --farbe-fokus: #fdba74;
+    --farbe-fehler: #f97066;
+    --farbe-ok: #6ccf8e;
+    color-scheme: dark;
+  }
+}

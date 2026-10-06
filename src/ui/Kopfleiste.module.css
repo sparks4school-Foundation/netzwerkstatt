@@ -1,0 +1,22 @@
+.kopf {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--abstand-3);
+  padding: var(--abstand-2) max(var(--abstand-4), env(safe-area-inset-right)) var(--abstand-2)
+    max(var(--abstand-4), env(safe-area-inset-left));
+  border-bottom: 1px solid var(--farbe-rand);
+  background: var(--farbe-hintergrund);
+}
+
+.titel {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.steuerung {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--abstand-3);
+}
