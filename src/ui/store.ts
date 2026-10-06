@@ -36,6 +36,7 @@ interface AppZustand {
 
   geraetHinzufuegen: (typ: GeraetTyp, position: { x: number; y: number }) => void;
   umbenennen: (id: string, name: string) => void;
+  setzeNetzwerk: (id: string, werte: { ip?: string; subnetzmaske?: string; gateway?: string }) => void;
   /** Verschieben während des Ziehens: ohne Verlaufseintrag. Vorher `merkeZustand()` aufrufen. */
   verschieben: (id: string, position: { x: number; y: number }) => void;
   merkeZustand: () => void;
@@ -96,6 +97,8 @@ export const useApp = create<AppZustand>()((set, get) => ({
     }),
 
   umbenennen: (id, name) => set((z) => mitVerlauf(z, geraetAendern(z.netz, id, { name }))),
+
+  setzeNetzwerk: (id, werte) => set((z) => mitVerlauf(z, geraetAendern(z.netz, id, werte))),
 
   verschieben: (id, position) => set((z) => ({ netz: geraetAendern(z.netz, id, { position }) })),
 

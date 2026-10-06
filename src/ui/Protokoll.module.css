@@ -1,0 +1,58 @@
+.protokoll {
+  display: flex;
+  flex-direction: column;
+  max-height: 32dvh;
+  border-top: 2px solid var(--farbe-rand);
+  background: var(--farbe-hintergrund);
+}
+
+.titel {
+  margin: 0;
+  padding: var(--abstand-2) var(--abstand-4);
+  font-size: 0.9375rem;
+}
+
+.leer {
+  margin: 0;
+  padding: 0 var(--abstand-4) var(--abstand-3);
+  color: var(--farbe-text-leise);
+}
+
+.rolle {
+  overflow: auto;
+}
+
+.tabelle {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.tabelle th,
+.tabelle td {
+  padding: var(--abstand-1) var(--abstand-3);
+  border-bottom: 1px solid var(--farbe-flaeche);
+  text-align: left;
+  vertical-align: top;
+}
+
+.tabelle th {
+  position: sticky;
+  top: 0;
+  background: var(--farbe-flaeche);
+  font-weight: 600;
+}
+
+.zahl {
+  font-family: var(--schrift-mono);
+  text-align: right;
+}
+
+/* Warnungen: Symbol + fett + linke Markierung (nicht nur Farbe). */
+.tabelle tr[data-warnung] td {
+  font-weight: 600;
+}
+
+.tabelle tr[data-warnung] td:first-child {
+  box-shadow: inset 4px 0 0 var(--farbe-fehler);
+}

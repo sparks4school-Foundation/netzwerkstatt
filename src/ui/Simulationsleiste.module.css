@@ -1,0 +1,66 @@
+.leiste {
+  position: absolute;
+  bottom: var(--abstand-3);
+  left: 50%;
+  z-index: 4;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--abstand-2);
+  width: max-content;
+  max-width: calc(100% - 2 * var(--abstand-3));
+  padding: var(--abstand-2);
+  border: 1px solid var(--farbe-rand);
+  border-radius: var(--radius);
+  background: var(--farbe-hintergrund);
+  box-shadow: 0 2px 12px rgb(0 0 0 / 0.15);
+  transform: translateX(-50%);
+}
+
+.leiste button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--abstand-1);
+  padding: 0 var(--abstand-3);
+  border: 1px solid var(--farbe-rand);
+  border-radius: 6px;
+  background: var(--farbe-flaeche);
+  color: var(--farbe-text);
+  cursor: pointer;
+}
+
+.leiste button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.tempo {
+  display: flex;
+  align-items: center;
+  gap: var(--abstand-2);
+  min-height: var(--touch-min);
+  font-size: 0.875rem;
+}
+
+.tempo input {
+  width: 110px;
+  accent-color: var(--farbe-akzent);
+}
+
+.tempoName {
+  min-width: 5.5em;
+  font-weight: 600;
+}
+
+.schritt {
+  font-family: var(--schrift-mono);
+  font-size: 0.875rem;
+  color: var(--farbe-text-leise);
+}
+
+.angehalten {
+  font-family: var(--schrift);
+  font-weight: 600;
+  color: var(--farbe-text);
+}

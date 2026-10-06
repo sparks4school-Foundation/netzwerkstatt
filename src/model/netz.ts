@@ -67,7 +67,7 @@ export function geraetHinzufuegen(
 export function geraetAendern(
   netz: NetzDatei,
   id: string,
-  aenderung: Partial<Pick<Geraet, 'name' | 'position'>>,
+  aenderung: Partial<Pick<Geraet, 'name' | 'position' | 'ip' | 'subnetzmaske' | 'gateway'>>,
 ): NetzDatei {
   return { ...netz, geraete: netz.geraete.map((g) => (g.id === id ? { ...g, ...aenderung } : g)) };
 }

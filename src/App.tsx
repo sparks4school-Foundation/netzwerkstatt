@@ -6,8 +6,10 @@ import { Bausteine } from './ui/Bausteine';
 import { Eigenschaften } from './ui/Eigenschaften';
 import { Kopfleiste } from './ui/Kopfleiste';
 import { Meldung } from './ui/Meldung';
+import { Protokoll } from './ui/Protokoll';
 import { useApp } from './ui/store';
 import { UpdateHinweis } from './ui/UpdateHinweis';
+import { useSimulationsUhr } from './ui/useSimulationsUhr';
 import { useTastenkuerzel } from './ui/useTastenkuerzel';
 import styles from './App.module.css';
 
@@ -15,6 +17,7 @@ export function App() {
   const bearbeitbar = useApp((z) => z.modus === 'aufbauen');
   useTastenkuerzel();
   useZwischenspeicher();
+  useSimulationsUhr();
 
   return (
     <ReactFlowProvider>
@@ -25,6 +28,7 @@ export function App() {
           <Arbeitsflaeche />
           <Eigenschaften />
         </div>
+        {!bearbeitbar && <Protokoll />}
         <Meldung />
         <UpdateHinweis />
       </div>

@@ -17,3 +17,20 @@
   text-align: center;
   pointer-events: none;
 }
+
+.hinweisOben {
+  position: absolute;
+  top: var(--abstand-3);
+  right: var(--abstand-4);
+  left: var(--abstand-4);
+  z-index: 4;
+  max-width: 34rem;
+  margin: 0 auto;
+  padding: var(--abstand-2) var(--abstand-3);
+  border: 1px solid var(--farbe-rand);
+  border-radius: var(--radius);
+  background: var(--farbe-hintergrund);
+  font-size: 0.875rem;
+  text-align: center;
+  pointer-events: none;
+}
