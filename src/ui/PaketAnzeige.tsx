@@ -1,5 +1,6 @@
 import { useReactFlow, ViewportPortal } from '@xyflow/react';
-import { texte } from '../content/texte';
+import { paketKurzname } from '../content/meldungen';
+import { istAnfrage } from '../sim/simulation';
 import { useSim } from './simStore';
 import styles from './PaketAnzeige.module.css';
 
@@ -31,19 +32,19 @@ export function PaketAnzeige() {
         const a = mitte(u.vonId);
         const b = mitte(u.nachId);
         if (!a || !b) return null;
-        const antwort = u.paket.art === 'antwort';
+        const antwort = !istAnfrage(u.paket);
         return (
           <div
             key={`${u.paket.id}-${u.start}`}
             className={styles.paket}
-            data-art={u.paket.art}
+            data-art={antwort ? 'antwort' : 'anfrage'}
             style={{
               transform: `translate(${a.x + (b.x - a.x) * p}px, ${a.y + (b.y - a.y) * p}px) translate(-50%, -50%)`,
             }}
             aria-hidden="true"
           >
             <span className={styles.symbol}>{antwort ? '↩' : '✉'}</span>
-            {antwort ? texte.paketAntwort : texte.paketNachricht}
+            {paketKurzname(u.paket)}
           </div>
         );
       })}

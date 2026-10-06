@@ -25,3 +25,13 @@
   font-weight: 600;
   pointer-events: none;
 }
+
+/* Dienste-Ansicht: Leitungen treten zurück (dünner, blasser), bleiben aber erkennbar. */
+.leitung:global(.react-flow__edge-path)[data-gedimmt] {
+  stroke-width: 2;
+  opacity: 0.35;
+}
+
+.beschriftung[data-gedimmt] {
+  opacity: 0.5;
+}

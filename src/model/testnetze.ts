@@ -1,4 +1,4 @@
-import { leeresNetz, type GeraetTyp, type LeitungsArt, type NetzDatei } from './datei';
+import { leeresNetz, type Geraet, type GeraetTyp, type LeitungsArt, type NetzDatei } from './datei';
 import { geraetAendern, geraetHinzufuegen, verbinden } from './netz';
 
 /**
@@ -27,4 +27,13 @@ export function baueNetz(
     netz = r.netz;
   }
   return { netz, id };
+}
+
+/** Ändert ein Gerät im Testnetz (z. B. Dienste oder DNS-Server setzen). */
+export function mitGeraet(
+  netz: NetzDatei,
+  id: string,
+  aenderung: Partial<Pick<Geraet, 'ip' | 'dnsServer' | 'dienste'>>,
+): NetzDatei {
+  return geraetAendern(netz, id, aenderung);
 }

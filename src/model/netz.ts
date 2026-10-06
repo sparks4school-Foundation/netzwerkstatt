@@ -1,5 +1,5 @@
 import type { Geraet, GeraetTyp, Leitung, LeitungsArt, NetzDatei } from './datei';
-import { geraeteKatalog } from './geraete';
+import { geraeteKatalog, standardDienste } from './geraete';
 
 /**
  * Reine Funktionen zum Bearbeiten eines Netzes. Sie verändern nie das übergebene Objekt,
@@ -61,13 +61,17 @@ export function geraetHinzufuegen(
   position: { x: number; y: number },
 ): { netz: NetzDatei; id: string } {
   const id = naechsteId(netz.geraete, 'g');
-  return { netz: { ...netz, geraete: [...netz.geraete, { id, typ, name, position }] }, id };
+  const dienste = standardDienste(typ);
+  const geraet: Geraet = { id, typ, name, position, ...(dienste.length ? { dienste } : {}) };
+  return { netz: { ...netz, geraete: [...netz.geraete, geraet] }, id };
 }
 
 export function geraetAendern(
   netz: NetzDatei,
   id: string,
-  aenderung: Partial<Pick<Geraet, 'name' | 'position' | 'ip' | 'subnetzmaske' | 'gateway'>>,
+  aenderung: Partial<
+    Pick<Geraet, 'name' | 'position' | 'ip' | 'subnetzmaske' | 'gateway' | 'dnsServer' | 'dienste'>
+  >,
 ): NetzDatei {
   return { ...netz, geraete: netz.geraete.map((g) => (g.id === id ? { ...g, ...aenderung } : g)) };
 }

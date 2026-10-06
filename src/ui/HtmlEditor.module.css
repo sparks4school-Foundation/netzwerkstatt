@@ -1,0 +1,118 @@
+.dialog {
+  width: min(1000px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  padding: 0;
+  border: 2px solid var(--farbe-text);
+  border-radius: 12px;
+  background: var(--farbe-hintergrund);
+  color: var(--farbe-text);
+}
+
+.dialog::backdrop {
+  background: rgb(0 0 0 / 0.45);
+}
+
+.inhalt {
+  display: flex;
+  flex-direction: column;
+  gap: var(--abstand-3);
+  padding: var(--abstand-4);
+}
+
+.titel {
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+.spalten {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--abstand-3);
+}
+
+.feld {
+  display: flex;
+  flex-direction: column;
+  gap: var(--abstand-1);
+}
+
+.feld > span {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--farbe-text-leise);
+}
+
+.feld input {
+  min-height: var(--touch-min);
+  padding: 0 var(--abstand-2);
+  border: 1px solid var(--farbe-rand);
+  border-radius: 6px;
+  background: var(--farbe-hintergrund);
+  color: var(--farbe-text);
+  font: inherit;
+  font-family: var(--schrift-mono);
+}
+
+.feld input[aria-invalid] {
+  border: 2px solid var(--farbe-fehler);
+}
+
+.quelltext {
+  min-height: 320px;
+  padding: var(--abstand-2);
+  border: 1px solid var(--farbe-rand);
+  border-radius: 6px;
+  background: var(--farbe-flaeche);
+  color: var(--farbe-text);
+  font-family: var(--schrift-mono);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  resize: vertical;
+  tab-size: 2;
+}
+
+.vorschau {
+  flex: 1;
+  min-height: 320px;
+  border: 1px solid var(--farbe-rand);
+  border-radius: 6px;
+  background: #fff;
+}
+
+.knoepfe {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--abstand-2);
+}
+
+.knoepfe button {
+  padding: 0 var(--abstand-4);
+  border: 1px solid var(--farbe-rand);
+  border-radius: var(--radius);
+  background: var(--farbe-flaeche);
+  color: var(--farbe-text);
+  cursor: pointer;
+}
+
+.knoepfe .primaer {
+  border-color: var(--farbe-akzent);
+  background: var(--farbe-akzent);
+  color: var(--farbe-akzent-text);
+  font-weight: 700;
+}
+
+.knoepfe button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+@media (max-width: 720px) {
+  .spalten {
+    grid-template-columns: 1fr;
+  }
+
+  .quelltext,
+  .vorschau {
+    min-height: 200px;
+  }
+}

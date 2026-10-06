@@ -1,0 +1,118 @@
+.fenster {
+  position: absolute;
+  bottom: 84px;
+  left: var(--abstand-3);
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  width: min(520px, calc(100% - 2 * var(--abstand-3)));
+  height: min(440px, calc(100% - 100px));
+  border: 2px solid var(--farbe-text);
+  border-radius: 12px;
+  background: var(--farbe-hintergrund);
+  box-shadow: 0 6px 24px rgb(0 0 0 / 0.25);
+  overflow: hidden;
+}
+
+.titelzeile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--abstand-1) var(--abstand-1) var(--abstand-1) var(--abstand-3);
+  background: var(--farbe-flaeche);
+  border-bottom: 1px solid var(--farbe-rand);
+}
+
+.titel {
+  margin: 0;
+  font-size: 0.9375rem;
+}
+
+.schliessen {
+  border: 0;
+  background: none;
+  color: var(--farbe-text);
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.adresszeile {
+  display: flex;
+  gap: var(--abstand-2);
+  padding: var(--abstand-2);
+  border-bottom: 1px solid var(--farbe-rand);
+}
+
+.adresszeile input {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--touch-min);
+  padding: 0 var(--abstand-3);
+  border: 1px solid var(--farbe-rand);
+  border-radius: 999px;
+  background: var(--farbe-hintergrund);
+  color: var(--farbe-text);
+  font: inherit;
+  font-family: var(--schrift-mono);
+  font-size: 0.875rem;
+}
+
+.adresszeile button {
+  padding: 0 var(--abstand-4);
+  border: 1px solid var(--farbe-akzent);
+  border-radius: 999px;
+  background: var(--farbe-akzent);
+  color: var(--farbe-akzent-text);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.inhalt {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  overflow: auto;
+}
+
+.hinweis,
+.status {
+  margin: 0;
+  padding: var(--abstand-4);
+  color: var(--farbe-text-leise);
+}
+
+.status::before {
+  content: '⏳ ';
+}
+
+.fehler {
+  margin: var(--abstand-4);
+  padding: var(--abstand-3) var(--abstand-4);
+  border-left: 6px solid var(--farbe-fehler);
+  background: var(--farbe-flaeche);
+}
+
+.fehler h3 {
+  margin: 0 0 var(--abstand-2);
+  font-size: 1rem;
+}
+
+.fehler p {
+  margin: 0;
+}
+
+.seite {
+  flex: 1;
+  width: 100%;
+  border: 0;
+  background: #fff;
+}
+
+@media (max-width: 720px) {
+  .fenster {
+    right: var(--abstand-2);
+    left: var(--abstand-2);
+    width: auto;
+  }
+}

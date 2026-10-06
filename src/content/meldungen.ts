@@ -1,7 +1,8 @@
 import type { AdressProblem } from '../model/adressen';
+import type { DnsEintragProblem } from '../model/dienste';
 import { netzBeschreibung } from '../model/ip';
 import type { VerbindungsProblem } from '../model/netz';
-import type { Paket, ProtokollEintrag, SendeFehler, VerwerfGrund } from '../sim/simulation';
+import type { BrowserFehler, Paket, ProtokollEintrag, SendeFehler, VerwerfGrund } from '../sim/simulation';
 
 /** Verständliche Fehlermeldungen: Was ist passiert? Woran liegt es? Was kann ich tun? (AGENTS.md 6.1) */
 export function verbindungsMeldung(p: VerbindungsProblem): string {
@@ -36,6 +37,8 @@ export function adressProblemKurz(p: AdressProblem): string {
       return 'Maske ungültig';
     case 'gateway-ungueltig':
       return 'Gateway ungültig';
+    case 'dns-ungueltig':
+      return 'DNS ungültig';
     case 'ip-doppelt':
       return 'IP doppelt';
     case 'ip-reserviert':
@@ -54,6 +57,8 @@ export function adressProblemText(p: AdressProblem): string {
       return 'Das ist keine gültige Subnetzmaske. Üblich ist 255.255.255.0.';
     case 'gateway-ungueltig':
       return 'Das Gateway ist keine gültige IP-Adresse.';
+    case 'dns-ungueltig':
+      return 'Beim DNS-Server muss eine gültige IP-Adresse stehen, z. B. 192.168.0.3.';
     case 'ip-doppelt':
       return `Diese IP-Adresse hat auch ${p.mit.map((g) => g.name).join(', ')}. Jede IP-Adresse darf in einem lokalen Rechnernetz nur einmal vorkommen – sonst kommen Nachrichten beim falschen Gerät an.`;
     case 'ip-reserviert':
@@ -86,23 +91,119 @@ const verwerfGrund: Record<VerwerfGrund, string> = {
   router: 'Router leiten zwischen Netzen weiter – das kommt später; die Nachricht geht verloren',
 };
 
+/** Kurzname eines Pakets für die Animation auf der Leitung. */
+export function paketKurzname(p: Paket): string {
+  switch (p.art) {
+    case 'nachricht':
+      return 'Nachricht';
+    case 'antwort':
+      return 'Antwort';
+    case 'dns-anfrage':
+      return 'DNS-Anfrage';
+    case 'dns-antwort':
+      return 'DNS-Antwort';
+    case 'http-anfrage':
+      return 'HTTP-Anfrage';
+    case 'http-antwort':
+      return 'HTTP-Antwort';
+    case 'abgelehnt':
+      return 'Abgelehnt';
+  }
+}
+
+/** Was steht im Paket? Ein Satz für das Kommunikationsprotokoll. */
+export function paketInhalt(p: Paket): string {
+  switch (p.art) {
+    case 'nachricht':
+      return `Nachricht „${p.inhalt}“`;
+    case 'antwort':
+      return 'Antwort';
+    case 'dns-anfrage':
+      return `DNS-Anfrage „Welche IP-Adresse hat ${p.domain}?“`;
+    case 'dns-antwort':
+      return p.ip
+        ? `DNS-Antwort „${p.domain} hat die IP-Adresse ${p.ip}“`
+        : `DNS-Antwort „${p.domain} kenne ich nicht“`;
+    case 'http-anfrage':
+      return `HTTP-Anfrage „Bitte schick mir die Seite ${p.pfad} von ${p.host}“`;
+    case 'http-antwort':
+      return p.status === 200
+        ? `HTTP-Antwort mit der Seite ${p.pfad}`
+        : `HTTP-Antwort „Seite ${p.pfad} gibt es nicht (404)“`;
+    case 'abgelehnt':
+      return `Ablehnung „Hier läuft kein ${p.dienst === 'webserver' ? 'Webserver' : 'DNS-Server'}“`;
+  }
+}
+
+export function browserFehlerText(f: BrowserFehler, geraet: string): { titel: string; text: string } {
+  switch (f.grund) {
+    case 'kein-browser':
+      return { titel: 'Kein Browser installiert', text: `Auf ${geraet} ist kein Browser installiert.` };
+    case 'adresse-ungueltig':
+      return {
+        titel: 'Ungültige Adresse',
+        text: 'Gib eine Domain wie www.schule.test oder eine IP-Adresse wie 192.168.0.2 ein.',
+      };
+    case 'kein-dns-server':
+      return {
+        titel: 'Kein DNS-Server eingetragen',
+        text: `${geraet} weiß nicht, welchen DNS-Server es nach der IP-Adresse fragen soll. Trage im Modus „Aufbauen“ bei ${geraet} die IP-Adresse des DNS-Servers ein – oder gib direkt eine IP-Adresse ein.`,
+      };
+    case 'domain-unbekannt':
+      return {
+        titel: 'Domain nicht gefunden',
+        text: `Der DNS-Server kennt ${f.domain} nicht. Tipp: Schau in die Tabelle des DNS-Servers – fehlt der Eintrag oder ist er falsch geschrieben?`,
+      };
+    case 'keine-antwort':
+      return {
+        titel: 'Keine Antwort',
+        text: `Vom ${f.von === 'dns-server' ? 'DNS-Server' : 'Webserver'} (${f.ip}) kam keine Antwort. Ist die IP-Adresse richtig und das Gerät angeschlossen? Schau ins Protokoll, wo die Nachricht verloren ging.`,
+      };
+    case 'dienst-fehlt':
+      return f.dienst === 'webserver'
+        ? {
+            titel: 'Kein Webserver',
+            text: `Das Gerät mit der IP-Adresse ${f.ip} ist erreichbar, aber dort läuft kein Webserver. Installiere dort den Dienst „Webserver“.`,
+          }
+        : {
+            titel: 'Kein DNS-Server-Dienst',
+            text: `Das Gerät mit der IP-Adresse ${f.ip} ist erreichbar, aber dort läuft kein DNS-Server. Installiere dort den Dienst „DNS-Server“ oder trage einen anderen DNS-Server ein.`,
+          };
+    case 'senden':
+      return { titel: 'Konnte nicht senden', text: sendeFehlerText(f.fehler, geraet, f.ip) };
+  }
+}
+
 /** Ein Eintrag im Kommunikationsprotokoll als Satz. `name` übersetzt Geräte-IDs in Namen. */
 export function protokollText(e: ProtokollEintrag, name: (id: string) => string): string {
-  const was = (p: Paket) => (p.art === 'nachricht' ? `Nachricht „${p.inhalt}“` : 'Antwort');
   switch (e.art) {
     case 'gesendet':
-      return `${was(e.paket)} an ${e.paket.zielIp} losgeschickt`;
+      return `${paketInhalt(e.paket)} an ${e.paket.zielIp} losgeschickt`;
     case 'weitergeleitet':
-      return `${was(e.paket)} für ${e.paket.zielIp} weitergeleitet an ${name(e.nachId)}`;
+      return `${paketKurzname(e.paket)} für ${e.paket.zielIp} weitergeleitet an ${name(e.nachId)}`;
     case 'empfangen':
-      return `${was(e.paket)} von ${e.paket.quelleIp} empfangen`;
+      return `${paketInhalt(e.paket)} von ${e.paket.quelleIp} empfangen`;
     case 'verworfen':
-      return `${was(e.paket)} für ${e.paket.zielIp}: ${verwerfGrund[e.grund]}`;
+      return `${paketKurzname(e.paket)} für ${e.paket.zielIp}: ${verwerfGrund[e.grund]}`;
     case 'nicht-gesendet':
       return `Nicht gesendet: ${sendeFehlerText(e.fehler, name(e.geraetId), e.zielIp)}`;
     case 'ip-doppelt':
       return `Achtung: ${e.paket.zielIp} ist mehrfach vergeben (${e.geraeteIds.map(name).join(', ')}).`;
     case 'falscher-empfaenger':
       return `Achtung: Die Antwort war für ${name(e.erwartetId)} gedacht, ist aber hier angekommen – die IP-Adresse ist doppelt vergeben.`;
+    case 'aufruf':
+      return `Browser ruft „${e.eingabe}“ auf`;
+    case 'browser-fehler':
+      return `Browser zeigt Fehler: ${browserFehlerText(e.fehler, name(e.geraetId)).titel}`;
+    case 'seite-angezeigt':
+      return e.status === 200
+        ? `Browser zeigt die Seite ${e.adresse.host}${e.adresse.pfad}`
+        : `Browser zeigt „Seite nicht gefunden“ (${e.adresse.host}${e.adresse.pfad})`;
   }
 }
+
+export const dnsEintragTexte: Record<DnsEintragProblem, string> = {
+  'domain-ungueltig': 'Domain ungültig (Beispiel: www.schule.test)',
+  'ip-ungueltig': 'IP-Adresse ungültig',
+  'domain-doppelt': 'Domain kommt doppelt vor',
+};

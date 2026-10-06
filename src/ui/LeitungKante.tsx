@@ -3,7 +3,7 @@ import { leitungsTexte } from '../content/geraete';
 import type { LeitungsArt } from '../model/datei';
 import styles from './LeitungKante.module.css';
 
-export type LeitungKanteDaten = { art: LeitungsArt };
+export type LeitungKanteDaten = { art: LeitungsArt; gedimmt?: boolean };
 export type LeitungKanteTyp = Edge<LeitungKanteDaten, 'leitung'>;
 
 /**
@@ -33,11 +33,13 @@ export function LeitungKante({ id, source, target, data, selected }: EdgeProps<L
         className={styles.leitung}
         data-art={data.art}
         data-ausgewaehlt={selected || undefined}
+        data-gedimmt={data.gedimmt || undefined}
       />
       {wlan && (
         <EdgeLabelRenderer>
           <div
             className={styles.beschriftung}
+            data-gedimmt={data.gedimmt || undefined}
             style={{
               transform: `translate(-50%, -50%) translate(${(p.x + q.x) / 2}px, ${(p.y + q.y) / 2}px)`,
             }}

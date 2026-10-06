@@ -20,6 +20,20 @@ export const geraetTypSchema = z.enum([
   'access-point',
 ]);
 
+/** Ein Dienst ist Software auf einem Gerät (Glossar: „Server als Dienst“ ≠ „Server als Hardware“). */
+export const dienstSchema = z.discriminatedUnion('art', [
+  z.object({ art: z.literal('browser') }),
+  z.object({
+    art: z.literal('webserver'),
+    /** Seiten nach Pfad, z. B. „/“ (Startseite) oder „/kontakt.html“. Inhalt ist HTML. */
+    seiten: z.array(z.object({ pfad: z.string(), html: z.string() })),
+  }),
+  z.object({
+    art: z.literal('dns-server'),
+    eintraege: z.array(z.object({ domain: z.string(), ip: z.string() })),
+  }),
+]);
+
 export const geraetSchema = z.object({
   id,
   typ: geraetTypSchema,
@@ -30,6 +44,9 @@ export const geraetSchema = z.object({
   ip: z.string().optional(),
   subnetzmaske: z.string().optional(),
   gateway: z.string().optional(),
+  /** IP-Adresse des DNS-Servers, den dieses Gerät für die Namensauflösung fragt. */
+  dnsServer: z.string().optional(),
+  dienste: z.array(dienstSchema).optional(),
 });
 
 export const leitungSchema = z.object({
@@ -64,6 +81,8 @@ export const netzDateiSchema = z
 export type NetzDatei = z.infer<typeof netzDateiSchema>;
 export type Geraet = z.infer<typeof geraetSchema>;
 export type GeraetTyp = z.infer<typeof geraetTypSchema>;
+export type Dienst = z.infer<typeof dienstSchema>;
+export type DienstArt = Dienst['art'];
 export type Leitung = z.infer<typeof leitungSchema>;
 export type LeitungsArt = Leitung['art'];
 

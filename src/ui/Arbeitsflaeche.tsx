@@ -1,6 +1,7 @@
 import {
   Background,
   ConnectionMode,
+  MarkerType,
   Controls,
   ReactFlow,
   useReactFlow,
@@ -15,16 +16,20 @@ import { adressProbleme, hatIpAdresse } from '../model/adressen';
 import { geraetTypSchema } from '../model/datei';
 import { GERAET_BREITE, GERAET_HOEHE } from '../model/netz';
 import { GeraetKnoten, type GeraetKnotenTyp } from './GeraetKnoten';
+import { BrowserFenster } from './BrowserFenster';
 import { LeitungKante, type LeitungKanteTyp } from './LeitungKante';
 import { PaketAnzeige } from './PaketAnzeige';
+import { logischeVerbindungen } from './logischeVerbindungen';
+import { useSim } from './simStore';
 import { Simulationsleiste } from './Simulationsleiste';
+import { VerbindungKante, type VerbindungKanteTyp } from './VerbindungKante';
 import { useApp } from './store';
 import styles from './Arbeitsflaeche.module.css';
 
 export const DRAG_TYP = 'application/x-netzwerkstatt-geraet';
 
 const nodeTypes = { geraet: GeraetKnoten };
-const edgeTypes = { leitung: LeitungKante };
+const edgeTypes = { leitung: LeitungKante, verbindung: VerbindungKante };
 
 /**
  * Netzplan. Die Wahrheit liegt im Store (Datenmodell); React Flow bekommt daraus abgeleitete
@@ -34,6 +39,9 @@ export function Arbeitsflaeche() {
   const netz = useApp((z) => z.netz);
   const auswahl = useApp((z) => z.auswahl);
   const bearbeitbar = useApp((z) => z.modus === 'aufbauen');
+  const dienstAnsicht = useApp((z) => z.ansicht === 'dienste');
+  const sim = useSim((z) => z.sim);
+  const simVersion = useSim((z) => z.version);
   const { verschieben, merkeZustand, waehle, verbinde, geraetHinzufuegen } = useApp.getState();
   const { screenToFlowPosition, flowToScreenPosition, setCenter, getZoom } = useReactFlow();
   const ziehtGerade = useRef(false);
@@ -86,29 +94,55 @@ export function Arbeitsflaeche() {
           id: g.id,
           type: 'geraet',
           position: g.position,
-          data: { typ: g.typ, name: g.name, ip, probleme: kurz, verbindbar: bearbeitbar },
+          data: {
+            typ: g.typ,
+            name: g.name,
+            ip,
+            probleme: kurz,
+            verbindbar: bearbeitbar,
+            dienste: dienstAnsicht ? (g.dienste ?? []).map((d) => d.art) : undefined,
+          },
           selected: auswahl?.art === 'geraet' && auswahl.id === g.id,
           ariaLabel: [g.name, ip && `IP-Adresse ${ip}`, ...kurz].filter(Boolean).join(', '),
         };
       }),
-    [netz.geraete, auswahl, probleme, bearbeitbar],
+    [netz.geraete, auswahl, probleme, bearbeitbar, dienstAnsicht],
   );
 
-  const edges = useMemo<LeitungKanteTyp[]>(
-    () =>
-      netz.leitungen.map((l) => ({
-        id: l.id,
-        type: 'leitung',
-        source: l.von,
-        target: l.nach,
-        data: { art: l.art },
-        selected: auswahl?.art === 'leitung' && auswahl.id === l.id,
-        ariaLabel: `${l.art === 'wlan' ? 'WLAN' : 'Kabel'}: ${
-          netz.geraete.find((g) => g.id === l.von)?.name
-        } – ${netz.geraete.find((g) => g.id === l.nach)?.name}`,
-      })),
-    [netz.leitungen, netz.geraete, auswahl],
-  );
+  const edges = useMemo<(LeitungKanteTyp | VerbindungKanteTyp)[]>(() => {
+    const leitungen: LeitungKanteTyp[] = netz.leitungen.map((l) => ({
+      id: l.id,
+      type: 'leitung',
+      source: l.von,
+      target: l.nach,
+      data: { art: l.art, gedimmt: dienstAnsicht },
+      selected: auswahl?.art === 'leitung' && auswahl.id === l.id,
+      ariaLabel: `${l.art === 'wlan' ? 'WLAN' : 'Kabel'}: ${
+        netz.geraete.find((g) => g.id === l.von)?.name
+      } – ${netz.geraete.find((g) => g.id === l.nach)?.name}`,
+    }));
+    if (!dienstAnsicht) return leitungen;
+
+    // Dienste-Ansicht: logische Verbindungen aus der Konfiguration (DNS-Server) und der Simulation.
+    void simVersion;
+    const zaehler = new Map<string, number>();
+    const verbindungen: VerbindungKanteTyp[] = logischeVerbindungen(netz, sim).map((v) => {
+      const paar = [v.clientId, v.serverId].sort().join('|');
+      const versatz = zaehler.get(paar) ?? 0;
+      zaehler.set(paar, versatz + 1);
+      return {
+        id: `v-${v.clientId}-${v.serverId}-${v.protokoll}`,
+        type: 'verbindung',
+        source: v.clientId,
+        target: v.serverId,
+        data: { protokoll: v.protokoll, versatz },
+        markerEnd: { type: MarkerType.ArrowClosed, color: 'var(--farbe-akzent)', width: 18, height: 18 },
+        selectable: false,
+        focusable: false,
+      };
+    });
+    return [...leitungen, ...verbindungen];
+  }, [netz, auswahl, dienstAnsicht, sim, simVersion]);
 
   const onNodesChange = useCallback(
     (changes: NodeChange<GeraetKnotenTyp>[]) => {
@@ -127,7 +161,7 @@ export function Arbeitsflaeche() {
   );
 
   const onEdgesChange = useCallback(
-    (changes: EdgeChange<LeitungKanteTyp>[]) => {
+    (changes: EdgeChange<LeitungKanteTyp | VerbindungKanteTyp>[]) => {
       for (const c of changes) {
         if (c.type !== 'select') continue;
         if (c.selected) waehle({ art: 'leitung', id: c.id });
@@ -206,6 +240,7 @@ export function Arbeitsflaeche() {
         <p className={styles.hinweisOben}>{texte.ausprobierenHinweis}</p>
       )}
       {!bearbeitbar && <Simulationsleiste />}
+      {!bearbeitbar && <BrowserFenster />}
     </main>
   );
 }
