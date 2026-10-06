@@ -25,6 +25,11 @@ export const geraetSchema = z.object({
   typ: geraetTypSchema,
   name: z.string(),
   position: z.object({ x: z.number(), y: z.number() }),
+  // Netzwerkeinstellungen (nur Endgeräte). Optional, damit Dateien aus Phase 1 gültig bleiben.
+  // Gespeichert wird die Eingabe wie getippt – auch ungültige Werte, die dann als Fehler markiert werden.
+  ip: z.string().optional(),
+  subnetzmaske: z.string().optional(),
+  gateway: z.string().optional(),
 });
 
 export const leitungSchema = z.object({

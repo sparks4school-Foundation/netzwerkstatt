@@ -1,0 +1,31 @@
+.paket {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px 2px 4px;
+  border: 2px solid var(--farbe-text);
+  border-radius: 999px;
+  background: var(--farbe-akzent);
+  color: var(--farbe-akzent-text);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.25);
+}
+
+/* Antwort: anderes Symbol, anderer Text, heller Hintergrund mit gestricheltem Rand – nicht nur Farbe. */
+.paket[data-art='antwort'] {
+  border-style: dashed;
+  background: var(--farbe-hintergrund);
+  color: var(--farbe-text);
+}
+
+.symbol {
+  font-size: 1rem;
+  line-height: 1;
+}

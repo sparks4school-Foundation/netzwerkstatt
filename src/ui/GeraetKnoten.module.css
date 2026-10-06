@@ -53,3 +53,34 @@
   inset: -13px;
   border-radius: 50%;
 }
+
+.ip {
+  font-family: var(--schrift-mono);
+  font-size: 0.75rem;
+}
+
+.ip[data-leer] {
+  color: var(--farbe-text-leise);
+  font-style: italic;
+}
+
+.knoten[data-problem] {
+  border-style: dashed;
+  border-color: var(--farbe-fehler);
+}
+
+.problem {
+  margin-top: 2px;
+  padding: 0 var(--abstand-1);
+  border-radius: 4px;
+  background: var(--farbe-fehler);
+  color: var(--farbe-hintergrund);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+/* Im Modus „Ausprobieren“: Anschluss bleibt für Leitungen nötig, ist aber unsichtbar und nicht bedienbar. */
+.versteckt:global(.react-flow__handle) {
+  opacity: 0;
+  pointer-events: none;
+}

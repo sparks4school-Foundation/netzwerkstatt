@@ -9,11 +9,15 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useCallback, useEffect, useMemo, useRef, type DragEvent } from 'react';
+import { adressProblemKurz } from '../content/meldungen';
 import { netzplanAriaTexte, texte } from '../content/texte';
+import { adressProbleme, hatIpAdresse } from '../model/adressen';
 import { geraetTypSchema } from '../model/datei';
 import { GERAET_BREITE, GERAET_HOEHE } from '../model/netz';
 import { GeraetKnoten, type GeraetKnotenTyp } from './GeraetKnoten';
 import { LeitungKante, type LeitungKanteTyp } from './LeitungKante';
+import { PaketAnzeige } from './PaketAnzeige';
+import { Simulationsleiste } from './Simulationsleiste';
 import { useApp } from './store';
 import styles from './Arbeitsflaeche.module.css';
 
@@ -45,36 +49,49 @@ export function Arbeitsflaeche() {
     const g = netz.geraete.find((x) => x.id === auswahl.id);
     if (!g) return;
     const rahmen = flaecheRef.current.getBoundingClientRect();
-    // Ein Eigenschaften-Blatt von unten verdeckt den unteren Teil der Fläche.
+    // Ein Eigenschaften-Blatt über der Fläche verdeckt rechts (Tablet) oder unten (Smartphone) einen Teil.
+    let { right: rechts, bottom: unten } = rahmen;
     const blatt = document.querySelector('aside[aria-labelledby="eigenschaften-titel"]');
-    const unten =
-      blatt && getComputedStyle(blatt).position === 'fixed'
-        ? Math.min(rahmen.bottom, blatt.getBoundingClientRect().top)
-        : rahmen.bottom;
+    if (blatt && getComputedStyle(blatt).position === 'absolute') {
+      const b = blatt.getBoundingClientRect();
+      if (b.top <= rahmen.top + 16) rechts = Math.min(rechts, b.left);
+      else unten = Math.min(unten, b.top);
+    }
     const lo = flowToScreenPosition(g.position);
     const ru = flowToScreenPosition({ x: g.position.x + GERAET_BREITE, y: g.position.y + GERAET_HOEHE });
-    if (lo.x < rahmen.left || lo.y < rahmen.top || ru.x > rahmen.right || ru.y > unten) {
+    if (lo.x < rahmen.left || lo.y < rahmen.top || ru.x > rechts || ru.y > unten) {
       // Mittelpunkt so wählen, dass das Gerät in der Mitte des freien (nicht verdeckten) Bereichs liegt.
       const zoom = getZoom();
+      const versatzX = (rahmen.right - rechts) / 2 / zoom;
       const versatzY = (rahmen.bottom - unten) / 2 / zoom;
-      void setCenter(g.position.x + GERAET_BREITE / 2, g.position.y + GERAET_HOEHE / 2 + versatzY, {
-        zoom,
-        duration: 250,
-      });
+      void setCenter(
+        g.position.x + GERAET_BREITE / 2 + versatzX,
+        g.position.y + GERAET_HOEHE / 2 + versatzY,
+        {
+          zoom,
+          duration: 250,
+        },
+      );
     }
   }, [netz.geraete, auswahl, flowToScreenPosition, setCenter, getZoom]);
 
+  const probleme = useMemo(() => adressProbleme(netz), [netz]);
+
   const nodes = useMemo<GeraetKnotenTyp[]>(
     () =>
-      netz.geraete.map((g) => ({
-        id: g.id,
-        type: 'geraet',
-        position: g.position,
-        data: { typ: g.typ, name: g.name },
-        selected: auswahl?.art === 'geraet' && auswahl.id === g.id,
-        ariaLabel: g.name,
-      })),
-    [netz.geraete, auswahl],
+      netz.geraete.map((g) => {
+        const kurz = (probleme.get(g.id) ?? []).map(adressProblemKurz);
+        const ip = hatIpAdresse(g) ? (g.ip ?? '') : undefined;
+        return {
+          id: g.id,
+          type: 'geraet',
+          position: g.position,
+          data: { typ: g.typ, name: g.name, ip, probleme: kurz, verbindbar: bearbeitbar },
+          selected: auswahl?.art === 'geraet' && auswahl.id === g.id,
+          ariaLabel: [g.name, ip && `IP-Adresse ${ip}`, ...kurz].filter(Boolean).join(', '),
+        };
+      }),
+    [netz.geraete, auswahl, probleme, bearbeitbar],
   );
 
   const edges = useMemo<LeitungKanteTyp[]>(
@@ -177,11 +194,18 @@ export function Arbeitsflaeche() {
         fitView
         fitViewOptions={{ maxZoom: 1.2 }}
         ariaLabelConfig={netzplanAriaTexte}
+        colorMode="system"
       >
         <Background gap={24} />
-        <Controls showInteractive={false} />
+        {/* Oben links: unten liegt im Modus „Ausprobieren“ die Simulationsleiste. */}
+        <Controls showInteractive={false} position="top-left" />
+        <PaketAnzeige />
       </ReactFlow>
       {netz.geraete.length === 0 && <p className={styles.hinweis}>{texte.leereArbeitsflaeche}</p>}
+      {!bearbeitbar && netz.geraete.length > 0 && !auswahl && (
+        <p className={styles.hinweisOben}>{texte.ausprobierenHinweis}</p>
+      )}
+      {!bearbeitbar && <Simulationsleiste />}
     </main>
   );
 }

@@ -109,34 +109,95 @@
   cursor: pointer;
 }
 
-/* Unter 1100 px: Blatt von unten über der Arbeitsfläche; ohne Auswahl ausgeblendet. */
+/* Feld in einer Zeile, das den Platz füllt (z. B. IP-Adresse neben „Vorschlag“). */
+.wachsen {
+  flex: 1;
+  min-width: 0;
+}
+
+.zeile:has(.wachsen) {
+  align-items: flex-end;
+}
+
+.vorschlag,
+.senden {
+  border: 1px solid var(--farbe-rand);
+  border-radius: var(--radius);
+  background: var(--farbe-flaeche);
+  color: var(--farbe-text);
+  cursor: pointer;
+}
+
+.senden {
+  border-color: var(--farbe-akzent);
+  background: var(--farbe-akzent);
+  color: var(--farbe-akzent-text);
+  font-weight: 700;
+}
+
+.senden:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.untertitel {
+  margin: 0;
+  font-size: 0.9375rem;
+}
+
+.probleme {
+  margin: 0;
+  padding: var(--abstand-2) var(--abstand-3);
+  border-left: 4px solid var(--farbe-fehler);
+  background: var(--farbe-flaeche);
+  list-style: none;
+  font-size: 0.875rem;
+}
+
+.probleme li + li {
+  margin-top: var(--abstand-2);
+}
+
+.panel input[aria-invalid] {
+  border: 2px solid var(--farbe-fehler);
+}
+
+/* Unter 1100 px: Blatt über der Arbeitsfläche (innerhalb des Arbeitsbereichs, damit das Protokoll frei bleibt). */
 @media (max-width: 1099px) {
   .panel[data-leer] {
     display: none;
   }
 
   .panel {
-    position: fixed;
+    position: absolute;
+    z-index: 5;
+    box-shadow: 0 4px 16px rgb(0 0 0 / 0.2);
+  }
+}
+
+/* Tablets: Karte oben rechts; unten bleibt Platz für die Simulationsleiste. */
+@media (min-width: 721px) and (max-width: 1099px) {
+  .panel {
+    top: var(--abstand-2);
+    right: var(--abstand-2);
+    width: 340px;
+    max-height: calc(100% - 96px);
+    border: 2px solid var(--farbe-text);
+    border-radius: 12px;
+  }
+}
+
+/* Smartphones: Blatt von unten. */
+@media (max-width: 720px) {
+  .panel {
     right: 0;
     bottom: 0;
     left: 0;
-    z-index: 5;
     width: auto;
-    max-height: 45dvh;
+    max-height: 60%;
     padding-bottom: max(var(--abstand-4), env(safe-area-inset-bottom));
     border-top: 2px solid var(--farbe-text);
     border-left: 0;
     border-radius: 12px 12px 0 0;
-    box-shadow: 0 -4px 16px rgb(0 0 0 / 0.15);
-  }
-}
-
-/* Tablets: Blatt rechts unten, nicht über die ganze Breite. */
-@media (min-width: 721px) and (max-width: 1099px) {
-  .panel {
-    left: auto;
-    width: 360px;
-    border-left: 2px solid var(--farbe-text);
-    border-radius: 12px 0 0 0;
   }
 }

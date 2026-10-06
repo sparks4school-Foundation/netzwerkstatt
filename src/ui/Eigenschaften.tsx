@@ -1,9 +1,14 @@
 import { useState } from 'react';
+import { adressProblemText, sendeFehlerText } from '../content/meldungen';
 import { geraeteTexte, leitungsTexte } from '../content/geraete';
 import { texte } from '../content/texte';
 import type { Geraet, LeitungsArt, NetzDatei } from '../model/datei';
 import { geraeteKatalog } from '../model/geraete';
+import { adressProbleme, hatIpAdresse, ipVorschlag } from '../model/adressen';
 import { findeGeraet, leitungenVon } from '../model/netz';
+import { stufenKonfiguration } from '../stufen';
+import { useSim } from './simStore';
+import { Textfeld } from './Textfeld';
 import { useApp } from './store';
 import styles from './Eigenschaften.module.css';
 
@@ -62,35 +67,26 @@ function GeraetDetails({
 }) {
   const { umbenennen, entferne, verbinde, waehle } = useApp.getState();
   const verbindungsart = useApp((z) => z.verbindungsart);
-  const [name, setzeName] = useState(geraet.name);
   const [ziel, setzeZiel] = useState('');
   // Geräte ohne Kabelanschluss (Smartphone) starten direkt mit WLAN.
   const [art, setzeArt] = useState<LeitungsArt>(
     geraeteKatalog[geraet.typ].maxKabel === 0 ? 'wlan' : verbindungsart,
   );
 
-  const namePruefen = () => {
-    const neu = name.trim();
-    if (neu && neu !== geraet.name) umbenennen(geraet.id, neu);
-    else setzeName(geraet.name);
-  };
-
   const leitungen = leitungenVon(netz, geraet.id);
   const andere = netz.geraete.filter((g) => g.id !== geraet.id);
 
   return (
     <div className={styles.inhalt}>
-      <label className={styles.feld}>
-        <span>{texte.name}</span>
-        <input
-          value={name}
-          disabled={!bearbeitbar}
-          maxLength={40}
-          onChange={(e) => setzeName(e.target.value)}
-          onBlur={namePruefen}
-          onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
-        />
-      </label>
+      <Textfeld
+        key={`name-${geraet.name}`}
+        klasse={styles.feld}
+        beschriftung={texte.name}
+        wert={geraet.name}
+        disabled={!bearbeitbar}
+        maxLength={40}
+        onUebernehmen={(neu) => neu && umbenennen(geraet.id, neu)}
+      />
 
       <div className={styles.feld}>
         <span>{texte.geraetetyp}</span>
@@ -98,6 +94,12 @@ function GeraetDetails({
           <strong>{geraeteTexte[geraet.typ].name}</strong> – {geraeteTexte[geraet.typ].beschreibung}
         </p>
       </div>
+
+      {bearbeitbar ? (
+        <NetzwerkEinstellungen geraet={geraet} netz={netz} />
+      ) : (
+        <NachrichtSenden geraet={geraet} />
+      )}
 
       <section className={styles.feld} aria-label={texte.leitungen}>
         <span>{texte.leitungen}</span>
@@ -197,5 +199,134 @@ function LeitungDetails({ id, netz, bearbeitbar }: { id: string; netz: NetzDatei
         </button>
       )}
     </div>
+  );
+}
+
+/** IP-Adresse (und ab Klasse 11 Subnetzmaske und Gateway) eines Geräts bearbeiten. */
+function NetzwerkEinstellungen({ geraet, netz }: { geraet: Geraet; netz: NetzDatei }) {
+  const { setzeNetzwerk } = useApp.getState();
+  const zeigeMaske = stufenKonfiguration[netz.stufe].zeigeSubnetzmaske;
+  const probleme = adressProbleme(netz).get(geraet.id) ?? [];
+
+  if (!hatIpAdresse(geraet)) {
+    return (
+      <p className={styles.wert}>{geraet.typ === 'router' ? texte.routerSpaeter : texte.ipNichtNoetig}</p>
+    );
+  }
+
+  return (
+    <div className={styles.inhalt}>
+      <div className={styles.zeile}>
+        <Textfeld
+          key={`ip-${geraet.ip}`}
+          klasse={`${styles.feld} ${styles.wachsen}`}
+          beschriftung={texte.ipAdresse}
+          wert={geraet.ip ?? ''}
+          placeholder={texte.ipBeispiel}
+          inputMode="decimal"
+          autoComplete="off"
+          spellCheck={false}
+          aria-invalid={probleme.some((p) => p.art === 'ip-ungueltig') || undefined}
+          onUebernehmen={(ip) => setzeNetzwerk(geraet.id, { ip })}
+        />
+        <button
+          type="button"
+          className={styles.vorschlag}
+          title={texte.ipVorschlagBeschreibung}
+          onClick={() => setzeNetzwerk(geraet.id, { ip: ipVorschlag(netz, geraet.id) })}
+        >
+          {texte.ipVorschlag}
+        </button>
+      </div>
+      {zeigeMaske && (
+        <>
+          <Textfeld
+            key={`maske-${geraet.subnetzmaske}`}
+            klasse={styles.feld}
+            beschriftung={texte.subnetzmaske}
+            wert={geraet.subnetzmaske ?? ''}
+            placeholder="255.255.255.0"
+            inputMode="decimal"
+            spellCheck={false}
+            onUebernehmen={(subnetzmaske) => setzeNetzwerk(geraet.id, { subnetzmaske })}
+          />
+          <Textfeld
+            key={`gateway-${geraet.gateway}`}
+            klasse={styles.feld}
+            beschriftung={texte.gateway}
+            wert={geraet.gateway ?? ''}
+            inputMode="decimal"
+            spellCheck={false}
+            onUebernehmen={(gateway) => setzeNetzwerk(geraet.id, { gateway })}
+          />
+        </>
+      )}
+      {probleme.length > 0 && (
+        <ul className={styles.probleme} aria-label={texte.probleme}>
+          {probleme.map((p, i) => (
+            <li key={i}>
+              <span aria-hidden="true">⚠ </span>
+              {adressProblemText(p)}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+/** Im Modus „Ausprobieren“: Nachricht von diesem Gerät an eine IP-Adresse schicken. */
+function NachrichtSenden({ geraet }: { geraet: Geraet }) {
+  const netz = useApp((z) => z.netz);
+  const melde = useApp((z) => z.melde);
+  const [zielIp, setzeZielIp] = useState('');
+  const [text, setzeText] = useState<string>(texte.nachrichtStandard);
+  if (!hatIpAdresse(geraet)) {
+    return (
+      <p className={styles.wert}>{geraet.typ === 'router' ? texte.routerSpaeter : texte.ipNichtNoetig}</p>
+    );
+  }
+  const andere = netz.geraete.filter((g) => g.id !== geraet.id && g.ip && hatIpAdresse(g));
+
+  return (
+    <form
+      className={styles.inhalt}
+      onSubmit={(e) => {
+        e.preventDefault();
+        const ergebnis = useSim.getState().senden(geraet.id, zielIp, text || texte.nachrichtStandard);
+        if (!ergebnis.ok) melde(sendeFehlerText(ergebnis, geraet.name, zielIp.trim()), 'fehler');
+      }}
+    >
+      <p className={styles.wert}>{texte.eigeneIp(geraet.ip || texte.keineIp)}</p>
+      <h3 className={styles.untertitel}>{texte.nachrichtSenden}</h3>
+      <label className={styles.feld}>
+        <span>{texte.anIpAdresse}</span>
+        <input
+          value={zielIp}
+          onChange={(e) => setzeZielIp(e.target.value)}
+          placeholder={texte.ipBeispiel}
+          inputMode="decimal"
+          autoComplete="off"
+          spellCheck={false}
+          list="ziel-ips"
+        />
+        {/* Vorschläge: IP-Adressen der anderen Geräte (mit Namen). */}
+        <datalist id="ziel-ips">
+          {andere.map((g) => (
+            <option key={g.id} value={g.ip}>
+              {g.name}
+            </option>
+          ))}
+        </datalist>
+      </label>
+      <label className={styles.feld}>
+        <span>{texte.nachrichtText}</span>
+        <input value={text} maxLength={40} onChange={(e) => setzeText(e.target.value)} />
+      </label>
+      <button type="submit" className={styles.senden} disabled={!zielIp.trim()}>
+        <span aria-hidden="true">✉ </span>
+        {texte.senden}
+      </button>
+    </form>
   );
 }

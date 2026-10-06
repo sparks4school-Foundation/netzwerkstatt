@@ -53,7 +53,7 @@ export default tseslint.config(
             },
             {
               from: { element: { type: 'content' } },
-              allow: { to: { element: { types: { anyOf: ['content', 'model'] } } } },
+              allow: { to: { element: { types: { anyOf: ['content', 'model', 'sim'] } } } },
             },
             {
               from: { element: { type: 'stufen' } },

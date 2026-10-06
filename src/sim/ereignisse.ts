@@ -21,6 +21,11 @@ export class Ereigniswarteschlange<T> {
     return this.#liste.length === 0;
   }
 
+  /** Zeitpunkt des nächsten Ereignisses, ohne es zu entnehmen. */
+  get naechsteZeit(): number | undefined {
+    return this.#liste[0]?.zeit;
+  }
+
   /** Plant ein Ereignis `verzoegerung` Ticks nach der aktuellen Zeit ein. */
   planen(verzoegerung: number, daten: T): void {
     if (verzoegerung < 0) throw new Error('Ereignisse können nicht in der Vergangenheit liegen.');

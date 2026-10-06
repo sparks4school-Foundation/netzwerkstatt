@@ -4,7 +4,7 @@ Diese Datei ist die zentrale Projektbeschreibung für Menschen **und** KI-Agente
 Sie enthält Ziel, Anforderungen, Architekturentscheidungen, Konventionen und Roadmap.
 Bei Widersprüchen zwischen Code und dieser Datei: nachfragen, dann diese Datei aktualisieren.
 
-> Status: **Phase 0 gemergt, Phase 1 (Editor) umgesetzt** auf Branch `phase-1-editor` (Stand 2026-10-06). Nächster Schritt: Phase 2 (Engine-Kern).
+> Status: **Phase 0 und 1 gemergt, Phase 2 (IP-Adressen & Simulation) umgesetzt** auf Branch `phase-2-engine` (Stand 2026-10-06). Nächster Schritt: Phase 3 (Dienste: Webserver, Browser, DNS).
 > Repository: https://github.com/sparks4school-Foundation/netzwerkstatt (öffentlich) · Live: https://sparks4school-foundation.github.io/netzwerkstatt/
 
 ## 0. Schnellstart für Agenten
@@ -20,6 +20,7 @@ npm run build      # dist/ (statisch); BASE_PATH=/netzwerkstatt/ für GitHub Pag
 - Node ≥ 22 (`.nvmrc`: 24 LTS für CI).
 - Versionsgrenzen: **TypeScript 6.0.x** (typescript-eslint unterstützt TS 7 noch nicht), **ESLint 9** (eslint-plugin-jsx-a11y unterstützt ESLint 10 noch nicht). Erst anheben, wenn die Plugins nachziehen.
 - Architekturgrenzen werden von ESLint erzwungen (`boundaries/dependencies` in `eslint.config.js`); in `src/sim` und `src/model` sind `window`, `document`, `setTimeout`, `Math.random` und `Date.now` verboten.
+- CI: Job `pruefen` (Typen, Lint, Format, Vitest, Build) und Job `e2e` im Container `mcr.microsoft.com/playwright:vX.Y.Z-noble`. **Beim Update von `@playwright/test` die Image-Version in `.github/workflows/ci.yml` mitziehen.**
 - Bekannt: `npm audit` meldet eine Lücke in `braces` (nur Build-Werkzeug, nicht im ausgelieferten Code).
 
 ---
@@ -237,7 +238,19 @@ So bleibt die Simulation testbar, und später sind andere Oberflächen (z. B. Dr
 - **Tastenkürzel:** Strg/Cmd+Z, Strg/Cmd+Umschalt+Z bzw. Strg+Y, Entf/Rücktaste (Auswahl entfernen), Escape (Auswahl aufheben); Pfeiltasten verschieben das ausgewählte Gerät (React Flow).
 - **Speichern:** Datei-Download `*.netzwerkstatt.json`; Öffnen per Dateiauswahl. Zusätzlich automatische Zwischenspeicherung im `localStorage` (nur das Netz).
 
-### 5.6 Aufgabenmodus
+### 5.6 Adressierung und Simulation (Phase 2)
+
+- **IP-Felder** (`ip`, `subnetzmaske`, `gateway`) sind optional am Gerät gespeichert, und zwar so, wie sie eingegeben wurden – auch ungültig. Nur Endgeräte haben IP-Adressen; Switch/Access Point brauchen keine; Router folgen in Phase 4. Ohne Maske gilt `255.255.255.0` (in 7/8 ist das Feld ausgeblendet).
+- **Lokales Rechnernetz = Segment** (`model/topologie.ts`): alle Geräte, die über Switches/Access Points erreichbar sind. Router und Endgeräte sind Ränder.
+- **Adressprobleme** (`model/adressen.ts`): ungültig, reserviert (.0/.255), doppelt im selben Segment, anderes Netz als die Mehrheit im Segment (bei Gleichstand keine Markierung). Anzeige am Gerät: ⚠ + Kurztext + gestrichelter Rahmen; Erklärung im Panel.
+- **Engine** (`sim/simulation.ts`): Ein Schritt = alle Pakete auf Leitungen kommen an und werden verarbeitet. Switch/AP leiten zum _nächstgelegenen_ Gerät mit der Ziel-IP (Breitensuche, deterministisch) – bewusst vereinfacht ohne MAC/ARP (kommt in Stufe 11). Endgeräte beantworten jede Nachricht mit einer Antwort. Bei doppelter IP-Adresse kann die Antwort beim falschen Gerät landen – das wird als Warnung protokolliert (Lernanlass TK 3).
+- **Sendefehler** (keine IP, ungültiges Ziel, eigene IP, nicht verbunden, anderes Netz) werden sofort gemeldet und protokolliert. Pakete an unbekannte IP-Adressen gehen sichtbar am Switch verloren.
+- **Protokolleinträge** sind strukturiert (IDs, Art, Grund); `content/meldungen.ts` macht daraus Sätze. Dafür darf `content` Typen aus `sim` importieren.
+- **Animation** (`ui/simStore.ts`, `ui/useSimulationsUhr.ts`): `requestAnimationFrame` erhöht `fortschritt` (0…1) je nach Tempo (Zeitlupe 3 s … schnell 0,4 s pro Schritt); bei 1 wird `sim.schritt()` ausgeführt. Pakete werden per `ViewportPortal` auf den Leitungen gezeichnet; bei `prefers-reduced-motion` stehen sie ruhig in der Leitungsmitte. Nachricht ✉ und Antwort ↩ unterscheiden sich in Symbol, Text und Rahmen.
+- **Bedienung:** Senden spielt automatisch ab. ⏭ Einzelschritt hält an; drückt man ihn vor dem Senden, wartet die Nachricht am Startgerät. Zurücksetzen startet eine neue Simulation. Beim Wechsel zu „Aufbauen“ wird die Simulation verworfen.
+- **Layout:** Unter 1100 px liegt das Eigenschaften-Blatt _innerhalb_ des Arbeitsbereichs (Tablet: Karte oben rechts, Smartphone: unten), damit Protokoll und Simulationsleiste frei bleiben. Zoom-Knöpfe oben links.
+
+### 5.7 Aufgabenmodus
 
 - Lehrkraft baut ein Netz, schaltet „Aufgabe erstellen“ ein und legt fest: Arbeitsauftrag (Text), Hilfestufen (1–3, schrittweise aufdeckbar), welche Elemente gesperrt sind, optional eingebaute Fehler und automatische Prüfbedingungen (z. B. „Browser auf PC-1 lädt www.schule.test“).
 - Export als normale JSON-Datei → Verteilung über Moodle/Schulplattform/USB.
@@ -291,7 +304,7 @@ So bleibt die Simulation testbar, und später sind andere Oberflächen (z. B. Dr
 | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------- |
 | 0 – Grundgerüst ✅    | Repo, Vite/TS/React, Lint, Tests, CI, PWA-Hülle, Design-Tokens, Lizenz                                                                                                         | Technik                                     |
 | 1 – Editor ✅         | Geräte platzieren/verbinden (Touch + Tastatur), Eigenschaften-Panel, Undo, Speichern/Laden JSON                                                                                | 7/8 TK 2                                    |
-| 2 – Engine-Kern       | Event-Queue, Switch, IP im lokalen Netz, „Nachricht senden“, Animation, Pause/Schritt, Protokoll, Erkennung doppelter IP                                                       | 7/8 TK 3                                    |
+| 2 – Engine-Kern ✅    | Event-Queue, Switch, IP im lokalen Netz, „Nachricht senden“, Animation, Pause/Schritt, Protokoll, Erkennung doppelter IP                                                       | 7/8 TK 3                                    |
 | 3 – Dienste (**MVP**) | Dienste installieren, Webserver mit HTML-Editor, Browser, DNS-Server, Namensauflösung Schritt für Schritt, Dienste-Ansicht                                                     | 7/8 TK 1, 4, 5 → **erster Unterrichtstest** |
 | 4 – Stufe 11          | Router + Routingtabellen, mehrere Netze, private/öffentliche Adressen (vereinfachtes NAT), Schichtenansicht, Pakete zerlegen/Verlust/Neuzusammensetzung, DHCP, Sequenzdiagramm | 11 TK 1–7                                   |
 | 5 – Unterricht        | Aufgabenmodus, Hilfestufen, Fehler einbauen, Blackbox/Whitebox, Druck/Export (Netzplan, Sequenzdiagramm), Glossar-Tooltips komplett                                            | Querschnitt                                 |
@@ -311,5 +324,6 @@ So bleibt die Simulation testbar, und später sind andere Oberflächen (z. B. Dr
 
 ### Offen
 
-- [ ] GitHub Pages in den Repo-Einstellungen aktivieren (Quelle: GitHub Actions); später ggf. eigene Domain
+- [x] GitHub Pages über GitHub Actions; Actions im Repo auf GitHub-eigene Actions beschränkt
+- [ ] Eigene Domain (optional)
 - [ ] Filius-Lizenzversion und Namensnutzung prüfen, bevor auf Filius verwiesen wird
