@@ -1,4 +1,5 @@
-import type { GeraetTyp, LeitungsArt } from '../model/datei';
+import type { DienstArt, GeraetTyp, LeitungsArt } from '../model/datei';
+import type { GlossarId } from './glossar';
 
 /** Bezeichnungen der Bausteine in der Oberfläche (Bildungsplan 7/8, TK 2). */
 export const geraeteTexte: Record<GeraetTyp, { name: string; beschreibung: string }> = {
@@ -24,4 +25,29 @@ export const geraeteTexte: Record<GeraetTyp, { name: string; beschreibung: strin
 export const leitungsTexte: Record<LeitungsArt, { name: string; beschreibung: string }> = {
   kabel: { name: 'Kabel', beschreibung: 'Physische Leitung per Netzwerkkabel.' },
   wlan: { name: 'WLAN', beschreibung: 'Funkverbindung zwischen einem Access Point und einem Endgerät.' },
+};
+
+/** Dienste: Name, Rolle und passender Glossarbegriff (für Tooltips). */
+export const dienstTexte: Record<
+  DienstArt,
+  { name: string; rolle: 'Client' | 'Server-Dienst'; beschreibung: string; glossar: GlossarId }
+> = {
+  browser: {
+    name: 'Browser',
+    rolle: 'Client',
+    beschreibung: 'Ruft Webseiten von Webservern ab und zeigt sie an.',
+    glossar: 'client',
+  },
+  webserver: {
+    name: 'Webserver',
+    rolle: 'Server-Dienst',
+    beschreibung: 'Liefert Webseiten an Browser aus. Die Seiten schreibst du selbst in HTML.',
+    glossar: 'webserver',
+  },
+  'dns-server': {
+    name: 'DNS-Server',
+    rolle: 'Server-Dienst',
+    beschreibung: 'Beantwortet die Frage „Welche IP-Adresse gehört zu dieser Domain?“ anhand seiner Tabelle.',
+    glossar: 'dns',
+  },
 };

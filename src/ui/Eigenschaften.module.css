@@ -201,3 +201,105 @@
     border-radius: 12px 12px 0 0;
   }
 }
+
+/* --- Dienste ------------------------------------------------------------------------------------ */
+.dienstliste {
+  display: flex;
+  flex-direction: column;
+  gap: var(--abstand-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dienst {
+  padding: var(--abstand-2) var(--abstand-3);
+  border: 1px solid var(--farbe-rand);
+  border-radius: var(--radius);
+  background: var(--farbe-flaeche);
+}
+
+.dienstKopf {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.rolle {
+  color: var(--farbe-text-leise);
+  font-size: 0.8125rem;
+}
+
+.klein {
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0 var(--abstand-2);
+  border: 1px solid var(--farbe-rand);
+  border-radius: 6px;
+  background: var(--farbe-hintergrund);
+  color: var(--farbe-text);
+  cursor: pointer;
+}
+
+.installieren {
+  border: 1px dashed var(--farbe-rand);
+  border-radius: var(--radius);
+  background: none;
+  color: var(--farbe-text);
+  text-align: left;
+  padding: 0 var(--abstand-3);
+  cursor: pointer;
+}
+
+.unterliste {
+  display: flex;
+  flex-direction: column;
+  gap: var(--abstand-1);
+  margin-top: var(--abstand-2);
+}
+
+.unterliste ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.unterTitel {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--farbe-text-leise);
+}
+
+.zeileKlein {
+  display: flex;
+  align-items: center;
+  gap: var(--abstand-1);
+  min-height: 40px;
+}
+
+.abstand {
+  flex: 1;
+}
+
+.dnsTabelle {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.dnsTabelle th {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: left;
+  color: var(--farbe-text-leise);
+}
+
+.dnsTabelle td {
+  padding: 2px;
+}
+
+.panel .dnsTabelle input {
+  width: 100%;
+  min-height: 40px;
+  font-family: var(--schrift-mono);
+  font-size: 0.8125rem;
+}

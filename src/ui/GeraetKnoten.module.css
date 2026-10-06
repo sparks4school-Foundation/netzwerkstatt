@@ -84,3 +84,26 @@
   opacity: 0;
   pointer-events: none;
 }
+
+.dienste {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Server-Dienste: Rahmen durchgezogen; Client: gestrichelt – unterscheidbar ohne Farbe. */
+.dienste li {
+  padding: 1px 4px;
+  border: 1px solid var(--farbe-akzent);
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.dienste li[data-rolle='client'] {
+  border-style: dashed;
+}

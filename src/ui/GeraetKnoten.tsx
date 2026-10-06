@@ -1,8 +1,8 @@
 import { Handle, Position, type Node, type NodeProps } from '@xyflow/react';
 import { memo } from 'react';
-import { geraeteTexte } from '../content/geraete';
+import { dienstTexte, geraeteTexte } from '../content/geraete';
 import { texte } from '../content/texte';
-import type { GeraetTyp } from '../model/datei';
+import type { DienstArt, GeraetTyp } from '../model/datei';
 import { GeraetIcon } from './GeraetIcon';
 import styles from './GeraetKnoten.module.css';
 
@@ -14,7 +14,11 @@ export type GeraetKnotenDaten = {
   /** Kurzbeschreibungen von Adressproblemen, z. B. „IP doppelt“. */
   probleme: string[];
   verbindbar: boolean;
+  /** Nur in der Dienste-Ansicht gesetzt: installierte Dienste. */
+  dienste?: DienstArt[];
 };
+const dienstSymbol: Record<DienstArt, string> = { browser: '🌐', webserver: '📄', 'dns-server': '📖' };
+
 export type GeraetKnotenTyp = Node<GeraetKnotenDaten, 'geraet'>;
 
 /**
@@ -31,11 +35,23 @@ export const GeraetKnoten = memo(function GeraetKnoten({ data, selected }: NodeP
     >
       <GeraetIcon typ={data.typ} groesse={36} />
       <span className={styles.name}>{data.name}</span>
-      <span className={styles.typ}>{geraeteTexte[data.typ].name}</span>
+      <span className={styles.typ}>
+        {data.dienste ? texte.hardware(geraeteTexte[data.typ].name) : geraeteTexte[data.typ].name}
+      </span>
       {data.ip !== undefined && (
         <span className={styles.ip} data-leer={!data.ip || undefined}>
           {data.ip || texte.keineIp}
         </span>
+      )}
+      {data.dienste && data.dienste.length > 0 && (
+        <ul className={styles.dienste} aria-label={texte.dienste}>
+          {data.dienste.map((d) => (
+            <li key={d} data-rolle={dienstTexte[d].rolle === 'Client' ? 'client' : 'server'}>
+              <span aria-hidden="true">{dienstSymbol[d]} </span>
+              {dienstTexte[d].name}
+            </li>
+          ))}
+        </ul>
       )}
       {problem && (
         <span className={styles.problem}>

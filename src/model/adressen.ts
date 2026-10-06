@@ -11,6 +11,7 @@ export type AdressProblem =
   | { art: 'ip-ungueltig' }
   | { art: 'maske-ungueltig' }
   | { art: 'gateway-ungueltig' }
+  | { art: 'dns-ungueltig' }
   | { art: 'ip-doppelt'; mit: Geraet[] }
   | { art: 'ip-reserviert'; welche: 'netzadresse' | 'broadcast' }
   | { art: 'anderes-netz'; erwartet: { ip: number; maske: number } };
@@ -47,6 +48,7 @@ export function adressProbleme(netz: NetzDatei): Map<string, AdressProblem[]> {
     if (g.subnetzmaske?.trim() && maskeZuZahl(g.subnetzmaske) === null)
       melde(g.id, { art: 'maske-ungueltig' });
     if (g.gateway?.trim() && ipZuZahl(g.gateway) === null) melde(g.id, { art: 'gateway-ungueltig' });
+    if (g.dnsServer?.trim() && ipZuZahl(g.dnsServer) === null) melde(g.id, { art: 'dns-ungueltig' });
     const a = adresseVon(g);
     if (!a) continue;
     gueltig.set(g.id, a);

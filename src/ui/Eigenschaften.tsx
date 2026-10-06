@@ -3,10 +3,12 @@ import { adressProblemText, sendeFehlerText } from '../content/meldungen';
 import { geraeteTexte, leitungsTexte } from '../content/geraete';
 import { texte } from '../content/texte';
 import type { Geraet, LeitungsArt, NetzDatei } from '../model/datei';
+import { dnsServerVorschlag, hatDienst } from '../model/dienste';
 import { geraeteKatalog } from '../model/geraete';
 import { adressProbleme, hatIpAdresse, ipVorschlag } from '../model/adressen';
 import { findeGeraet, leitungenVon } from '../model/netz';
 import { stufenKonfiguration } from '../stufen';
+import { DiensteAbschnitt } from './DiensteAbschnitt';
 import { useSim } from './simStore';
 import { Textfeld } from './Textfeld';
 import { useApp } from './store';
@@ -96,9 +98,24 @@ function GeraetDetails({
       </div>
 
       {bearbeitbar ? (
-        <NetzwerkEinstellungen geraet={geraet} netz={netz} />
+        <>
+          <NetzwerkEinstellungen geraet={geraet} netz={netz} />
+          <DiensteAbschnitt geraet={geraet} />
+        </>
       ) : (
-        <NachrichtSenden geraet={geraet} />
+        <>
+          {hatDienst(geraet, 'browser') && (
+            <button
+              type="button"
+              className={styles.senden}
+              onClick={() => useSim.getState().oeffneBrowser(geraet.id)}
+            >
+              <span aria-hidden="true">🌐 </span>
+              {texte.browserOeffnen}
+            </button>
+          )}
+          <NachrichtSenden geraet={geraet} />
+        </>
       )}
 
       <section className={styles.feld} aria-label={texte.leitungen}>
@@ -233,6 +250,7 @@ function NetzwerkEinstellungen({ geraet, netz }: { geraet: Geraet; netz: NetzDat
           type="button"
           className={styles.vorschlag}
           title={texte.ipVorschlagBeschreibung}
+          aria-label={texte.ipVorschlagBeschreibung}
           onClick={() => setzeNetzwerk(geraet.id, { ip: ipVorschlag(netz, geraet.id) })}
         >
           {texte.ipVorschlag}
@@ -261,6 +279,31 @@ function NetzwerkEinstellungen({ geraet, netz }: { geraet: Geraet; netz: NetzDat
           />
         </>
       )}
+      <div className={styles.zeile}>
+        <Textfeld
+          key={`dns-${geraet.dnsServer}`}
+          klasse={`${styles.feld} ${styles.wachsen}`}
+          beschriftung={texte.dnsServer}
+          title={texte.dnsServerBeschreibung}
+          wert={geraet.dnsServer ?? ''}
+          placeholder="192.168.0.3"
+          inputMode="decimal"
+          autoComplete="off"
+          spellCheck={false}
+          aria-invalid={probleme.some((p) => p.art === 'dns-ungueltig') || undefined}
+          onUebernehmen={(dnsServer) => setzeNetzwerk(geraet.id, { dnsServer })}
+        />
+        <button
+          type="button"
+          className={styles.vorschlag}
+          title={texte.dnsVorschlagBeschreibung}
+          aria-label={texte.dnsVorschlagBeschreibung}
+          disabled={!dnsServerVorschlag(netz, geraet.id)}
+          onClick={() => setzeNetzwerk(geraet.id, { dnsServer: dnsServerVorschlag(netz, geraet.id) })}
+        >
+          {texte.ipVorschlag}
+        </button>
+      </div>
       {probleme.length > 0 && (
         <ul className={styles.probleme} aria-label={texte.probleme}>
           {probleme.map((p, i) => (

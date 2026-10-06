@@ -23,6 +23,8 @@ interface SimZustand {
   /** Fortschritt des aktuellen Schritts von 0 bis 1 – Grundlage der Animation. */
   fortschritt: number;
   protokollOffen: boolean;
+  /** Gerät, dessen Browser-Fenster offen ist. */
+  browserGeraet: string | null;
 
   starte: (netz: NetzDatei) => void;
   beende: () => void;
@@ -32,6 +34,8 @@ interface SimZustand {
   schritt: () => void;
   setzeTempo: (tempo: number) => void;
   setzeProtokollOffen: (offen: boolean) => void;
+  oeffneBrowser: (geraetId: string | null) => void;
+  aufrufen: (geraetId: string, eingabe: string) => void;
   /** Von der Animationsschleife aufgerufen: `ms` Millisekunden sind vergangen. */
   ticke: (ms: number) => void;
 }
@@ -45,6 +49,7 @@ export const useSim = create<SimZustand>()((set, get) => ({
   tempo: 2,
   fortschritt: 0,
   protokollOffen: true,
+  browserGeraet: null,
 
   starte: (netz) =>
     set((z) => ({
@@ -55,7 +60,7 @@ export const useSim = create<SimZustand>()((set, get) => ({
       einzelschritt: false,
       fortschritt: 0,
     })),
-  beende: () => set({ sim: null, laeuft: false, einzelschritt: false, fortschritt: 0 }),
+  beende: () => set({ sim: null, laeuft: false, einzelschritt: false, fortschritt: 0, browserGeraet: null }),
 
   senden: (vonId, zielIp, text) => {
     const { sim } = get();
@@ -72,6 +77,13 @@ export const useSim = create<SimZustand>()((set, get) => ({
   schritt: () => set((z) => ({ laeuft: false, angehalten: true, einzelschritt: !!z.sim?.aktiv })),
   setzeTempo: (tempo) => set({ tempo }),
   setzeProtokollOffen: (protokollOffen) => set({ protokollOffen }),
+  oeffneBrowser: (browserGeraet) => set({ browserGeraet }),
+  aufrufen: (geraetId, eingabe) => {
+    const { sim } = get();
+    if (!sim) return;
+    sim.aufrufen(geraetId, eingabe);
+    set((z) => ({ version: z.version + 1, laeuft: z.laeuft || (sim.aktiv && !z.angehalten) }));
+  },
 
   ticke: (ms) => {
     const z = get();

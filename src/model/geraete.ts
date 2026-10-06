@@ -1,4 +1,4 @@
-import type { GeraetTyp } from './datei';
+import type { Dienst, GeraetTyp } from './datei';
 
 /**
  * Technische Eigenschaften der Bausteine (siehe AGENTS.md 3.1, TK 2).
@@ -26,3 +26,8 @@ export const geraeteKatalog: Record<GeraetTyp, GeraetEigenschaften> = {
 };
 
 export const geraetTypen = Object.keys(geraeteKatalog) as GeraetTyp[];
+
+/** Neue Computer, Smartphones und Spielkonsolen haben schon einen Browser – wie im echten Leben. */
+export function standardDienste(typ: GeraetTyp): Dienst[] {
+  return typ === 'computer' || typ === 'smartphone' || typ === 'spielkonsole' ? [{ art: 'browser' }] : [];
+}

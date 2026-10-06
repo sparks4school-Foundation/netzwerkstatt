@@ -5,11 +5,15 @@ import { leeresNetz } from '../model/datei';
 import { stufen, type StufeId } from '../model/stufe';
 import { stufenKonfiguration } from '../stufen';
 import { netzAusDatei, netzHerunterladen } from './dateiAktionen';
-import { useApp, type Modus } from './store';
+import { useApp, type Ansicht, type Modus } from './store';
 import { Umschalter } from './Umschalter';
 import styles from './Kopfleiste.module.css';
 
 const stufenOptionen = stufen.map((id) => ({ wert: id, text: stufenKonfiguration[id].name }));
+const ansichtOptionen = [
+  { wert: 'infrastruktur', text: texte.ansichtInfrastruktur },
+  { wert: 'dienste', text: texte.ansichtDienste },
+] as const satisfies readonly { wert: Ansicht; text: string }[];
 const modusOptionen = [
   { wert: 'aufbauen', text: texte.modusAufbauen },
   { wert: 'ausprobieren', text: texte.modusAusprobieren },
@@ -18,9 +22,11 @@ const modusOptionen = [
 export function Kopfleiste() {
   const stufe = useApp((z) => z.netz.stufe);
   const modus = useApp((z) => z.modus);
+  const ansicht = useApp((z) => z.ansicht);
   const kannZurueck = useApp((z) => z.vergangenheit.length > 0);
   const kannVor = useApp((z) => z.zukunft.length > 0);
-  const { setzeStufe, setzeModus, rueckgaengig, wiederholen, ersetzeNetz, melde } = useApp.getState();
+  const { setzeStufe, setzeModus, setzeAnsicht, rueckgaengig, wiederholen, ersetzeNetz, melde } =
+    useApp.getState();
   const dateiEingabe = useRef<HTMLInputElement>(null);
 
   return (
@@ -96,6 +102,13 @@ export function Kopfleiste() {
           optionen={stufenOptionen}
           wert={stufe}
           onChange={setzeStufe}
+        />
+        <Umschalter<Ansicht>
+          name="ansicht"
+          beschriftung={texte.ansicht}
+          optionen={ansichtOptionen}
+          wert={ansicht}
+          onChange={setzeAnsicht}
         />
         <Umschalter<Modus>
           name="modus"

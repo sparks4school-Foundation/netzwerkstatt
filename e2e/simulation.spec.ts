@@ -52,7 +52,9 @@ test('IP-Adresse eintragen und Vorschlag nutzen', async ({ page }) => {
   await ladeNetz(page, lan, lanLeitungen);
   await page.getByRole('button', { name: 'Computer hinzufügen' }).click();
   const ipFeld = page.getByRole('textbox', { name: 'IP-Adresse' });
-  await page.getByRole('button', { name: 'Vorschlag' }).click();
+  await page
+    .getByRole('button', { name: 'Nächste freie IP-Adresse im lokalen Rechnernetz eintragen' })
+    .click();
   await expect(ipFeld).toHaveValue('192.168.0.11');
   await ipFeld.fill('192.168.0.300');
   await ipFeld.press('Enter');

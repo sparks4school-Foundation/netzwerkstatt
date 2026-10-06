@@ -41,6 +41,11 @@ export class Ereigniswarteschlange<T> {
     this.#liste.splice(links, 0, ereignis);
   }
 
+  /** Entfernt alle geplanten Ereignisse, auf die `bedingung` zutrifft (z. B. erledigte Zeitlimits). */
+  entfernen(bedingung: (daten: T) => boolean): void {
+    this.#liste = this.#liste.filter((e) => !bedingung(e.daten));
+  }
+
   /** Entnimmt das nächste Ereignis und stellt die Uhr auf dessen Zeitpunkt. */
   naechstes(): Ereignis<T> | undefined {
     const ereignis = this.#liste.shift();

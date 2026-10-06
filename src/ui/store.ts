@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { geraeteTexte } from '../content/geraete';
 import { verbindungsMeldung } from '../content/meldungen';
-import { leeresNetz, type GeraetTyp, type LeitungsArt, type NetzDatei } from '../model/datei';
+import { leeresNetz, type Dienst, type GeraetTyp, type LeitungsArt, type NetzDatei } from '../model/datei';
 import {
   geraetAendern,
   freiePosition,
@@ -13,6 +13,7 @@ import {
 import type { StufeId } from '../model/stufe';
 
 export type Modus = 'aufbauen' | 'ausprobieren';
+export type Ansicht = 'infrastruktur' | 'dienste';
 export type Auswahl = { art: 'geraet' | 'leitung'; id: string } | null;
 export type Meldung = { text: string; art: 'fehler' | 'info'; nr: number } | null;
 
@@ -23,12 +24,15 @@ interface AppZustand {
   vergangenheit: NetzDatei[];
   zukunft: NetzDatei[];
   modus: Modus;
+  /** 2-Schichten-Modell (7/8, TK 1): physische Infrastruktur oder Dienste mit logischen Verbindungen. */
+  ansicht: Ansicht;
   auswahl: Auswahl;
   verbindungsart: LeitungsArt;
   meldung: Meldung;
 
   setzeStufe: (stufe: StufeId) => void;
   setzeModus: (modus: Modus) => void;
+  setzeAnsicht: (ansicht: Ansicht) => void;
   setzeVerbindungsart: (art: LeitungsArt) => void;
   waehle: (auswahl: Auswahl) => void;
   melde: (text: string, art?: 'fehler' | 'info') => void;
@@ -36,7 +40,11 @@ interface AppZustand {
 
   geraetHinzufuegen: (typ: GeraetTyp, position: { x: number; y: number }) => void;
   umbenennen: (id: string, name: string) => void;
-  setzeNetzwerk: (id: string, werte: { ip?: string; subnetzmaske?: string; gateway?: string }) => void;
+  setzeNetzwerk: (
+    id: string,
+    werte: { ip?: string; subnetzmaske?: string; gateway?: string; dnsServer?: string },
+  ) => void;
+  setzeDienste: (id: string, dienste: Dienst[]) => void;
   /** Verschieben während des Ziehens: ohne Verlaufseintrag. Vorher `merkeZustand()` aufrufen. */
   verschieben: (id: string, position: { x: number; y: number }) => void;
   merkeZustand: () => void;
@@ -74,12 +82,14 @@ export const useApp = create<AppZustand>()((set, get) => ({
   vergangenheit: [],
   zukunft: [],
   modus: 'aufbauen',
+  ansicht: 'infrastruktur',
   auswahl: null,
   verbindungsart: 'kabel',
   meldung: null,
 
   setzeStufe: (stufe) => set((z) => ({ netz: { ...z.netz, stufe } })),
   setzeModus: (modus) => set({ modus }),
+  setzeAnsicht: (ansicht) => set({ ansicht }),
   setzeVerbindungsart: (verbindungsart) => set({ verbindungsart }),
   waehle: (auswahl) => set({ auswahl }),
   melde: (text, art = 'info') => set({ meldung: { text, art, nr: ++meldungNr } }),
@@ -99,6 +109,7 @@ export const useApp = create<AppZustand>()((set, get) => ({
   umbenennen: (id, name) => set((z) => mitVerlauf(z, geraetAendern(z.netz, id, { name }))),
 
   setzeNetzwerk: (id, werte) => set((z) => mitVerlauf(z, geraetAendern(z.netz, id, werte))),
+  setzeDienste: (id, dienste) => set((z) => mitVerlauf(z, geraetAendern(z.netz, id, { dienste }))),
 
   verschieben: (id, position) => set((z) => ({ netz: geraetAendern(z.netz, id, { position }) })),
 
