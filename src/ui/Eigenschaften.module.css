@@ -303,3 +303,24 @@
   font-family: var(--schrift-mono);
   font-size: 0.8125rem;
 }
+
+.hinweisKlein {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--farbe-text-leise);
+}
+
+.ankreuzen {
+  display: flex;
+  align-items: center;
+  gap: var(--abstand-2);
+  min-height: var(--touch-min);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ankreuzen input {
+  width: 22px;
+  height: 22px;
+  accent-color: var(--farbe-fehler);
+}

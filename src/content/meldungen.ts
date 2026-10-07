@@ -1,6 +1,7 @@
 import type { AdressProblem } from '../model/adressen';
 import type { DnsEintragProblem } from '../model/dienste';
-import { netzBeschreibung } from '../model/ip';
+import { maskeZuZahl, netzBeschreibung } from '../model/ip';
+import type { RoutingEintragProblem } from '../model/routing';
 import type { VerbindungsProblem } from '../model/netz';
 import type { BrowserFehler, Paket, ProtokollEintrag, SendeFehler, VerwerfGrund } from '../sim/simulation';
 
@@ -39,6 +40,8 @@ export function adressProblemKurz(p: AdressProblem): string {
       return 'Gateway ungültig';
     case 'dns-ungueltig':
       return 'DNS ungültig';
+    case 'gateway-anderes-netz':
+      return 'Gateway falsch';
     case 'ip-doppelt':
       return 'IP doppelt';
     case 'ip-reserviert':
@@ -59,6 +62,8 @@ export function adressProblemText(p: AdressProblem): string {
       return 'Das Gateway ist keine gültige IP-Adresse.';
     case 'dns-ungueltig':
       return 'Beim DNS-Server muss eine gültige IP-Adresse stehen, z. B. 192.168.0.3.';
+    case 'gateway-anderes-netz':
+      return 'Das Gateway liegt nicht im eigenen Netz. Das Gateway ist der Router-Anschluss im selben lokalen Rechnernetz, z. B. 192.168.0.1.';
     case 'ip-doppelt':
       return `Diese IP-Adresse hat auch ${p.mit.map((g) => g.name).join(', ')}. Jede IP-Adresse darf in einem lokalen Rechnernetz nur einmal vorkommen – sonst kommen Nachrichten beim falschen Gerät an.`;
     case 'ip-reserviert':
@@ -80,15 +85,23 @@ export function sendeFehlerText(f: SendeFehler, geraet: string, zielIp: string):
       return `${zielIp} ist die eigene IP-Adresse von ${geraet}. Wähle die Adresse eines anderen Geräts.`;
     case 'nicht-verbunden':
       return `${geraet} ist mit keinem anderen Gerät verbunden.`;
+    case 'leitung-ausgefallen':
+      return `Die Leitung von ${geraet} ist ausgefallen.`;
     case 'anderes-netz':
-      return `${zielIp} liegt nicht im Netz von ${geraet} (${f.eigenesNetz}). Nachrichten in andere Netze brauchen einen Router – das kommt später.`;
+      return `${zielIp} liegt nicht im Netz von ${geraet} (${f.eigenesNetz}). Nachrichten in andere Netze gehen über einen Router: Trage bei ${geraet} ein Gateway ein (in Klasse 11).`;
+    case 'gateway-falsch':
+      return `Das Gateway ${f.gateway} liegt nicht im Netz von ${geraet} (${f.eigenesNetz}). Das Gateway muss der Router-Anschluss im eigenen Netz sein.`;
+    case 'keine-route':
+      return `${geraet} kennt keinen Weg zu ${zielIp} – in der Routingtabelle fehlt ein passender Eintrag.`;
   }
 }
 
 const verwerfGrund: Record<VerwerfGrund, string> = {
   'kein-ziel': 'kein Gerät mit dieser IP-Adresse im lokalen Rechnernetz – die Nachricht geht verloren',
   'falsche-ip': 'die Nachricht ist nicht für diese IP-Adresse – sie wird verworfen',
-  router: 'Router leiten zwischen Netzen weiter – das kommt später; die Nachricht geht verloren',
+  'keine-route': 'kein passender Eintrag in der Routingtabelle – das Paket wird verworfen',
+  ttl: 'Lebensdauer (TTL) abgelaufen – das Paket ist zu oft weitergeleitet worden (Routing-Schleife?) und wird verworfen',
+  'leitung-ausgefallen': 'die Leitung ist ausgefallen – das Paket geht verloren',
 };
 
 /** Kurzname eines Pakets für die Animation auf der Leitung. */
@@ -180,7 +193,9 @@ export function protokollText(e: ProtokollEintrag, name: (id: string) => string)
     case 'gesendet':
       return `${paketInhalt(e.paket)} an ${e.paket.zielIp} losgeschickt`;
     case 'weitergeleitet':
-      return `${paketKurzname(e.paket)} für ${e.paket.zielIp} weitergeleitet an ${name(e.nachId)}`;
+      return e.route
+        ? `${paketKurzname(e.paket)} für ${e.paket.zielIp} weitergeleitet an ${name(e.nachId)} – laut Routingtabelle: ${e.route.ziel}/${maskeKurz(e.route.subnetzmaske)} ${e.route.gateway ? `über ${e.route.gateway}` : 'direkt angeschlossen'}`
+        : `${paketKurzname(e.paket)} für ${e.paket.zielIp} weitergeleitet an ${name(e.nachId)}`;
     case 'empfangen':
       return `${paketInhalt(e.paket)} von ${e.paket.quelleIp} empfangen`;
     case 'verworfen':
@@ -206,4 +221,20 @@ export const dnsEintragTexte: Record<DnsEintragProblem, string> = {
   'domain-ungueltig': 'Domain ungültig (Beispiel: www.schule.test)',
   'ip-ungueltig': 'IP-Adresse ungültig',
   'domain-doppelt': 'Domain kommt doppelt vor',
+};
+
+/** Subnetzmaske in Kurzform, z. B. 255.255.255.0 → 24 (Anzahl der Einsen). */
+export function maskeKurz(maske: string): string {
+  const zahl = maskeZuZahl(maske);
+  if (zahl === null) return maske;
+  let n = 0;
+  for (let b = zahl; b; b = (b << 1) >>> 0) n++;
+  return String(n);
+}
+
+export const routingEintragTexte: Record<RoutingEintragProblem, string> = {
+  'ziel-ungueltig': 'Zielnetz ist keine gültige Adresse',
+  'maske-ungueltig': 'Subnetzmaske ungültig',
+  'gateway-ungueltig': 'Gateway ist keine gültige IP-Adresse',
+  'anschluss-fehlt': 'Anschluss gibt es nicht (mehr)',
 };

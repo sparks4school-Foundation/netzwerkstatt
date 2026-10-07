@@ -11,6 +11,8 @@ export type GeraetKnotenDaten = {
   name: string;
   /** IP-Adresse wie eingegeben; `undefined` = Gerät hat keine (Switch, AP), '' = noch nicht vergeben. */
   ip?: string;
+  /** Router: IP-Adressen der Anschlüsse (nur Klasse 11). */
+  routerIps?: string[];
   /** Kurzbeschreibungen von Adressproblemen, z. B. „IP doppelt“. */
   probleme: string[];
   verbindbar: boolean;
@@ -42,6 +44,9 @@ export const GeraetKnoten = memo(function GeraetKnoten({ data, selected }: NodeP
         <span className={styles.ip} data-leer={!data.ip || undefined}>
           {data.ip || texte.keineIp}
         </span>
+      )}
+      {data.routerIps && data.routerIps.length > 0 && (
+        <span className={styles.ip}>{data.routerIps.join(' · ')}</span>
       )}
       {data.dienste && data.dienste.length > 0 && (
         <ul className={styles.dienste} aria-label={texte.dienste}>

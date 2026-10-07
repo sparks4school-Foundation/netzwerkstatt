@@ -73,3 +73,32 @@ export function weg(netz: NetzDatei, vonId: string, zielId: string): Leitung[] |
   }
   return null;
 }
+
+/**
+ * Lokales Rechnernetz hinter einer bestimmten Leitung eines Geräts (z. B. hinter einem Router-Anschluss).
+ * Hängt am anderen Ende ein Switch/Access Point, ist es dessen Segment; sonst nur die beiden Geräte.
+ */
+export function segmentAnLeitung(netz: NetzDatei, geraetId: string, leitungId: string): Set<string> {
+  const l = netz.leitungen.find((x) => x.id === leitungId);
+  if (!l) return new Set([geraetId]);
+  const anderes = findeGeraet(netz, l.von === geraetId ? l.nach : l.von);
+  if (!anderes) return new Set([geraetId]);
+  if (istVerteilerImSegment(anderes)) return segment(netz, anderes.id);
+  return new Set([geraetId, anderes.id]);
+}
+
+/**
+ * Eindeutiger Name des lokalen Rechnernetzes hinter einer Leitung – gleich für alle Schnittstellen,
+ * die im selben Segment liegen. Grundlage für Adressprüfung und Routing.
+ */
+export function segmentSchluessel(netz: NetzDatei, geraetId: string, leitungId: string): string {
+  const l = netz.leitungen.find((x) => x.id === leitungId);
+  const anderes = l && findeGeraet(netz, l.von === geraetId ? l.nach : l.von);
+  if (!l || !anderes) return `allein:${geraetId}`;
+  if (!istVerteilerImSegment(anderes)) return `p2p:${l.id}`;
+  const verteiler = netz.geraete
+    .filter((g) => istVerteilerImSegment(g) && segment(netz, anderes.id).has(g.id))
+    .map((g) => g.id)
+    .sort();
+  return `l2:${verteiler[0]}`;
+}

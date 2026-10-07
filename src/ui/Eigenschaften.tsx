@@ -5,10 +5,12 @@ import { texte } from '../content/texte';
 import type { Geraet, LeitungsArt, NetzDatei } from '../model/datei';
 import { dnsServerVorschlag, hatDienst } from '../model/dienste';
 import { geraeteKatalog } from '../model/geraete';
-import { adressProbleme, hatIpAdresse, ipVorschlag } from '../model/adressen';
+import { adresseVon, adressProbleme, gatewayVorschlag, hatIpAdresse, ipVorschlag } from '../model/adressen';
+import { istPrivat } from '../model/ip';
 import { findeGeraet, leitungenVon } from '../model/netz';
 import { stufenKonfiguration } from '../stufen';
 import { DiensteAbschnitt } from './DiensteAbschnitt';
+import { RouterEinstellungen } from './RouterEinstellungen';
 import { useSim } from './simStore';
 import { Textfeld } from './Textfeld';
 import { useApp } from './store';
@@ -206,6 +208,19 @@ function LeitungDetails({ id, netz, bearbeitbar }: { id: string; netz: NetzDatei
         </p>
         <p className={styles.wert}>{leitungsTexte[leitung.art].beschreibung}</p>
       </div>
+      <label className={styles.ankreuzen}>
+        <input
+          type="checkbox"
+          checked={!!leitung.ausgefallen}
+          onChange={(e) => {
+            useApp.getState().setzeLeitungAusgefallen(id, e.target.checked);
+            // Während der Simulation wirkt die Störung sofort.
+            useSim.getState().leitungAusfallen(id, e.target.checked);
+          }}
+        />
+        <span>{texte.leitungAusgefallen}</span>
+      </label>
+      <p className={styles.hinweisKlein}>{texte.leitungAusgefallenHinweis}</p>
       {bearbeitbar && (
         <button
           type="button"
@@ -225,11 +240,9 @@ function NetzwerkEinstellungen({ geraet, netz }: { geraet: Geraet; netz: NetzDat
   const zeigeMaske = stufenKonfiguration[netz.stufe].zeigeSubnetzmaske;
   const probleme = adressProbleme(netz).get(geraet.id) ?? [];
 
-  if (!hatIpAdresse(geraet)) {
-    return (
-      <p className={styles.wert}>{geraet.typ === 'router' ? texte.routerSpaeter : texte.ipNichtNoetig}</p>
-    );
-  }
+  if (geraet.typ === 'router') return <RouterEinstellungen router={geraet} netz={netz} bearbeitbar />;
+  if (!hatIpAdresse(geraet)) return <p className={styles.wert}>{texte.ipNichtNoetig}</p>;
+  const eigene = adresseVon(geraet);
 
   return (
     <div className={styles.inhalt}>
@@ -256,6 +269,16 @@ function NetzwerkEinstellungen({ geraet, netz }: { geraet: Geraet; netz: NetzDat
           {texte.ipVorschlag}
         </button>
       </div>
+      {zeigeMaske && eigene && (
+        <p
+          className={styles.hinweisKlein}
+          title={istPrivat(eigene.ip) ? texte.privatBeschreibung : texte.oeffentlichBeschreibung}
+        >
+          <strong>{istPrivat(eigene.ip) ? texte.privat : texte.oeffentlich}</strong>
+          {' – '}
+          {istPrivat(eigene.ip) ? texte.privatBeschreibung : texte.oeffentlichBeschreibung}
+        </p>
+      )}
       {zeigeMaske && (
         <>
           <Textfeld
@@ -268,15 +291,29 @@ function NetzwerkEinstellungen({ geraet, netz }: { geraet: Geraet; netz: NetzDat
             spellCheck={false}
             onUebernehmen={(subnetzmaske) => setzeNetzwerk(geraet.id, { subnetzmaske })}
           />
-          <Textfeld
-            key={`gateway-${geraet.gateway}`}
-            klasse={styles.feld}
-            beschriftung={texte.gateway}
-            wert={geraet.gateway ?? ''}
-            inputMode="decimal"
-            spellCheck={false}
-            onUebernehmen={(gateway) => setzeNetzwerk(geraet.id, { gateway })}
-          />
+          <div className={styles.zeile}>
+            <Textfeld
+              key={`gateway-${geraet.gateway}`}
+              klasse={`${styles.feld} ${styles.wachsen}`}
+              beschriftung={texte.gateway}
+              wert={geraet.gateway ?? ''}
+              placeholder="192.168.0.1"
+              inputMode="decimal"
+              spellCheck={false}
+              aria-invalid={probleme.some((p) => p.art.startsWith('gateway')) || undefined}
+              onUebernehmen={(gateway) => setzeNetzwerk(geraet.id, { gateway })}
+            />
+            <button
+              type="button"
+              className={styles.vorschlag}
+              title={texte.gatewayVorschlagBeschreibung}
+              aria-label={texte.gatewayVorschlagBeschreibung}
+              disabled={!gatewayVorschlag(netz, geraet.id)}
+              onClick={() => setzeNetzwerk(geraet.id, { gateway: gatewayVorschlag(netz, geraet.id) })}
+            >
+              {texte.ipVorschlag}
+            </button>
+          </div>
         </>
       )}
       <div className={styles.zeile}>
@@ -324,11 +361,8 @@ function NachrichtSenden({ geraet }: { geraet: Geraet }) {
   const melde = useApp((z) => z.melde);
   const [zielIp, setzeZielIp] = useState('');
   const [text, setzeText] = useState<string>(texte.nachrichtStandard);
-  if (!hatIpAdresse(geraet)) {
-    return (
-      <p className={styles.wert}>{geraet.typ === 'router' ? texte.routerSpaeter : texte.ipNichtNoetig}</p>
-    );
-  }
+  if (geraet.typ === 'router') return <RouterEinstellungen router={geraet} netz={netz} bearbeitbar={false} />;
+  if (!hatIpAdresse(geraet)) return <p className={styles.wert}>{texte.ipNichtNoetig}</p>;
   const andere = netz.geraete.filter((g) => g.id !== geraet.id && g.ip && hatIpAdresse(g));
 
   return (

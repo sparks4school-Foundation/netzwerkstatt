@@ -1,9 +1,10 @@
 import { BaseEdge, EdgeLabelRenderer, useInternalNode, type Edge, type EdgeProps } from '@xyflow/react';
 import { leitungsTexte } from '../content/geraete';
+import { texte } from '../content/texte';
 import type { LeitungsArt } from '../model/datei';
 import styles from './LeitungKante.module.css';
 
-export type LeitungKanteDaten = { art: LeitungsArt; gedimmt?: boolean };
+export type LeitungKanteDaten = { art: LeitungsArt; gedimmt?: boolean; ausgefallen?: boolean };
 export type LeitungKanteTyp = Edge<LeitungKanteDaten, 'leitung'>;
 
 /**
@@ -34,8 +35,22 @@ export function LeitungKante({ id, source, target, data, selected }: EdgeProps<L
         data-art={data.art}
         data-ausgewaehlt={selected || undefined}
         data-gedimmt={data.gedimmt || undefined}
+        data-ausgefallen={data.ausgefallen || undefined}
       />
-      {wlan && (
+      {data.ausgefallen && (
+        <EdgeLabelRenderer>
+          <div
+            className={styles.ausfall}
+            style={{
+              transform: `translate(-50%, -50%) translate(${(p.x + q.x) / 2}px, ${(p.y + q.y) / 2}px)`,
+            }}
+          >
+            <span aria-hidden="true">✕ </span>
+            {texte.ausgefallen}
+          </div>
+        </EdgeLabelRenderer>
+      )}
+      {wlan && !data.ausgefallen && (
         <EdgeLabelRenderer>
           <div
             className={styles.beschriftung}

@@ -10,6 +10,9 @@ export const TEMPI = [
   { name: 'schnell', dauer: 400 },
 ] as const;
 
+/** Dauer eines Schritts, in dem nichts unterwegs ist (nur Warten auf ein Zeitlimit). */
+const LEERLAUF_DAUER = 150;
+
 interface SimZustand {
   sim: Simulation | null;
   /** Wird bei jeder Änderung der Simulation erhöht, damit React neu zeichnet (die Simulation selbst ist veränderlich). */
@@ -36,6 +39,7 @@ interface SimZustand {
   setzeProtokollOffen: (offen: boolean) => void;
   oeffneBrowser: (geraetId: string | null) => void;
   aufrufen: (geraetId: string, eingabe: string) => void;
+  leitungAusfallen: (leitungId: string, ausgefallen: boolean) => void;
   /** Von der Animationsschleife aufgerufen: `ms` Millisekunden sind vergangen. */
   ticke: (ms: number) => void;
 }
@@ -78,6 +82,10 @@ export const useSim = create<SimZustand>()((set, get) => ({
   setzeTempo: (tempo) => set({ tempo }),
   setzeProtokollOffen: (protokollOffen) => set({ protokollOffen }),
   oeffneBrowser: (browserGeraet) => set({ browserGeraet }),
+  leitungAusfallen: (leitungId, ausgefallen) => {
+    get().sim?.leitungAusfallen(leitungId, ausgefallen);
+    set((z) => ({ version: z.version + 1 }));
+  },
   aufrufen: (geraetId, eingabe) => {
     const { sim } = get();
     if (!sim) return;
@@ -92,7 +100,9 @@ export const useSim = create<SimZustand>()((set, get) => ({
       set({ laeuft: false, einzelschritt: false, fortschritt: 0 });
       return;
     }
-    const fortschritt = z.fortschritt + ms / TEMPI[z.tempo]!.dauer;
+    // Ist kein Paket unterwegs (z. B. Browser wartet nur noch auf ein Zeitlimit), schnell weiterzählen.
+    const dauer = z.sim.unterwegs.length === 0 ? LEERLAUF_DAUER : TEMPI[z.tempo]!.dauer;
+    const fortschritt = z.fortschritt + ms / dauer;
     if (fortschritt < 1) {
       set({ fortschritt });
       return;

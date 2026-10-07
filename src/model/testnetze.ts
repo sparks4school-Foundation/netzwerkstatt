@@ -33,7 +33,16 @@ export function baueNetz(
 export function mitGeraet(
   netz: NetzDatei,
   id: string,
-  aenderung: Partial<Pick<Geraet, 'ip' | 'dnsServer' | 'dienste'>>,
+  aenderung: Partial<
+    Pick<Geraet, 'ip' | 'dnsServer' | 'dienste' | 'gateway' | 'subnetzmaske' | 'anschluesse' | 'routing'>
+  >,
 ): NetzDatei {
   return geraetAendern(netz, id, aenderung);
+}
+
+/** ID der Leitung zwischen zwei Geräten (für Router-Anschlüsse in Tests). */
+export function leitungZwischen(netz: NetzDatei, a: string, b: string): string {
+  const l = netz.leitungen.find((x) => (x.von === a && x.nach === b) || (x.von === b && x.nach === a));
+  if (!l) throw new Error(`Keine Leitung zwischen ${a} und ${b}`);
+  return l.id;
 }
