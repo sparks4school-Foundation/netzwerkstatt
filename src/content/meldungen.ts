@@ -93,6 +93,8 @@ export function sendeFehlerText(f: SendeFehler, geraet: string, zielIp: string):
       return `Das Gateway ${f.gateway} liegt nicht im Netz von ${geraet} (${f.eigenesNetz}). Das Gateway muss der Router-Anschluss im eigenen Netz sein.`;
     case 'keine-route':
       return `${geraet} kennt keinen Weg zu ${zielIp} – in der Routingtabelle fehlt ein passender Eintrag.`;
+    case 'dhcp-fehlt':
+      return `${geraet} bezieht seine IP-Adresse per DHCP und hat noch keine. Tippe zuerst auf „IP-Adresse per DHCP holen“.`;
   }
 }
 
@@ -103,6 +105,8 @@ const verwerfGrund: Record<VerwerfGrund, string> = {
   ttl: 'Lebensdauer (TTL) abgelaufen – das Paket ist zu oft weitergeleitet worden (Routing-Schleife?) und wird verworfen',
   'leitung-ausgefallen': 'die Leitung ist ausgefallen – das Paket geht verloren',
   stoerung: 'ist auf der gestörten Leitung verloren gegangen',
+  'rundsendung-ignoriert':
+    'ist eine Rundsendung an alle – dieses Gerät ist nicht zuständig und ignoriert sie',
 };
 
 /** Kurzname eines Pakets für die Animation auf der Leitung. */
@@ -126,6 +130,14 @@ export function paketKurzname(p: Paket): string {
       return `Teil ${p.nr}/${p.anzahl}`;
     case 'bestaetigung':
       return `Bestätigung ${p.nr}`;
+    case 'dhcp-discover':
+      return 'DHCP-Discover';
+    case 'dhcp-offer':
+      return 'DHCP-Offer';
+    case 'dhcp-request':
+      return 'DHCP-Request';
+    case 'dhcp-ack':
+      return 'DHCP-Ack';
   }
 }
 
@@ -154,6 +166,14 @@ export function paketInhalt(p: Paket): string {
       return `Teil ${p.nr}/${p.anzahl} „${p.inhalt}“`;
     case 'bestaetigung':
       return `Bestätigung „Teil ${p.nr} ist angekommen“`;
+    case 'dhcp-discover':
+      return 'DHCP-Discover „Gibt es hier einen DHCP-Server? Ich brauche eine IP-Adresse.“';
+    case 'dhcp-offer':
+      return `DHCP-Offer „Du kannst ${p.ip} haben.“`;
+    case 'dhcp-request':
+      return `DHCP-Request „Ich nehme ${p.ip} vom Server ${p.serverIp}.“`;
+    case 'dhcp-ack':
+      return `DHCP-Ack „${p.ip} gehört jetzt dir${p.gateway ? ` – Gateway ${p.gateway}` : ''}${p.dnsServer ? `, DNS-Server ${p.dnsServer}` : ''}.“`;
   }
 }
 
@@ -221,6 +241,18 @@ export function protokollText(e: ProtokollEintrag, name: (id: string) => string)
       return `Browser ruft „${e.eingabe}“ auf`;
     case 'browser-fehler':
       return `Browser zeigt Fehler: ${browserFehlerText(e.fehler, name(e.geraetId)).titel}`;
+    case 'dhcp-start':
+      return 'Fragt per DHCP nach einer IP-Adresse';
+    case 'dhcp-erhalten':
+      return `Hat per DHCP die IP-Adresse ${e.angebot.ip} vom Server ${e.serverIp} bekommen`;
+    case 'dhcp-fehlgeschlagen':
+      return 'Keine IP-Adresse erhalten – kein DHCP-Server hat geantwortet. Ist ein DHCP-Server im lokalen Rechnernetz installiert?';
+    case 'dhcp-voll':
+      return 'DHCP-Server hat keine freie Adresse mehr im eingestellten Bereich';
+    case 'nat':
+      return e.richtung === 'aus'
+        ? `NAT: Absender ${e.innenIp} wird zu ${e.aussenIp} (Port ${e.port}) – private Adressen bleiben im Heimnetz`
+        : `NAT: Antwort an ${e.aussenIp} (Port ${e.port}) wird zurückübersetzt an ${e.innenIp}`;
     case 'zerlegt':
       return `Nachricht für ${e.zielIp} in ${e.anzahl} Teile zerlegt`;
     case 'einsortiert':

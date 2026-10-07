@@ -52,6 +52,7 @@ interface SimZustand {
     zeichenProTeil: number,
   ) => { ok: true } | ({ ok: false } & SendeFehler);
   leitungAendern: (leitungId: string, aenderung: { verlust?: number; verzoegerung?: number }) => void;
+  dhcpAnfordern: (geraetId: string) => void;
   setzeUntenAnsicht: (ansicht: 'protokoll' | 'sequenz') => void;
   setzeZwischenstationen: (an: boolean) => void;
   aufrufen: (geraetId: string, eingabe: string) => void;
@@ -135,6 +136,10 @@ export const useSim = create<SimZustand>()((set, get) => ({
     const ergebnis = sim.inPaketenSenden(vonId, zielIp, text, zeichenProTeil);
     set((z) => ({ version: z.version + 1, laeuft: z.laeuft || (ergebnis.ok && !z.angehalten) }));
     return ergebnis.ok ? { ok: true } : ergebnis;
+  },
+  dhcpAnfordern: (geraetId) => {
+    get().sim?.dhcpAnfordern(geraetId);
+    set((z) => ({ version: z.version + 1, laeuft: z.laeuft || !z.angehalten }));
   },
   leitungAendern: (leitungId, aenderung) => {
     get().sim?.leitungAendern(leitungId, aenderung);

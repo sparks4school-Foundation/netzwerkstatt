@@ -282,9 +282,28 @@ function NetzwerkEinstellungen({ geraet, netz }: { geraet: Geraet; netz: NetzDat
   if (geraet.typ === 'router') return <RouterEinstellungen router={geraet} netz={netz} bearbeitbar />;
   if (!hatIpAdresse(geraet)) return <p className={styles.wert}>{texte.ipNichtNoetig}</p>;
   const eigene = adresseVon(geraet);
+  const dhcpSchalter = zeigeMaske && (
+    <label className={styles.ankreuzen}>
+      <input
+        type="checkbox"
+        checked={!!geraet.dhcp}
+        onChange={(e) => useApp.getState().setzeNetzwerk(geraet.id, { dhcp: e.target.checked })}
+      />
+      <span>{texte.dhcpAutomatisch}</span>
+    </label>
+  );
+  if (geraet.dhcp && zeigeMaske) {
+    return (
+      <div className={styles.inhalt}>
+        {dhcpSchalter}
+        <p className={styles.hinweisKlein}>{texte.dhcpHinweis}</p>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.inhalt}>
+      {dhcpSchalter}
       <div className={styles.zeile}>
         <Textfeld
           key={`ip-${geraet.ip}`}
@@ -403,6 +422,11 @@ function NachrichtSenden({ geraet }: { geraet: Geraet }) {
   const [inPaketen, setzeInPaketen] = useState(false);
   const [zeichen, setzeZeichen] = useState(4);
   const mitPaketen = stufenKonfiguration[netz.stufe].zeigeRoutingtabelle;
+  // Eigene Adresse aus der Simulation (DHCP-Clients bekommen sie erst dort)
+  const simIp = useSim((z) => {
+    const g = z.sim?.netz.geraete.find((x) => x.id === geraet.id);
+    return g && !g.dhcp && g.ip ? g.ip : null;
+  });
   if (geraet.typ === 'router') return <RouterEinstellungen router={geraet} netz={netz} bearbeitbar={false} />;
   if (!hatIpAdresse(geraet)) return <p className={styles.wert}>{texte.ipNichtNoetig}</p>;
   const andere = netz.geraete.filter((g) => g.id !== geraet.id && g.ip && hatIpAdresse(g));
@@ -419,7 +443,8 @@ function NachrichtSenden({ geraet }: { geraet: Geraet }) {
         if (!ergebnis.ok) melde(sendeFehlerText(ergebnis, geraet.name, zielIp.trim()), 'fehler');
       }}
     >
-      <p className={styles.wert}>{texte.eigeneIp(geraet.ip || texte.keineIp)}</p>
+      {geraet.dhcp && <DhcpHolen geraetId={geraet.id} />}
+      <p className={styles.wert}>{texte.eigeneIp(simIp ?? texte.keineIp)}</p>
       <h3 className={styles.untertitel}>{texte.nachrichtSenden}</h3>
       <label className={styles.feld}>
         <span>{texte.anIpAdresse}</span>
@@ -537,5 +562,30 @@ function Empfangspuffer({ geraetId }: { geraetId: string }) {
         </section>
       ))}
     </>
+  );
+}
+
+function DhcpHolen({ geraetId }: { geraetId: string }) {
+  const zustand = useSim((z) => z.sim?.dhcpZustand(geraetId));
+  useSim((z) => z.version);
+  return (
+    <div className={styles.feld}>
+      <button
+        type="button"
+        className={styles.senden}
+        disabled={zustand?.phase === 'suche' || zustand?.phase === 'anfrage'}
+        onClick={() => useSim.getState().dhcpAnfordern(geraetId)}
+      >
+        <span aria-hidden="true">🏷 </span>
+        {texte.dhcpHolen}
+      </button>
+      {zustand && (
+        <p className={styles.hinweisKlein} role="status">
+          {zustand.phase === 'fehler' && <span aria-hidden="true">⚠ </span>}
+          {texte.dhcpStatus[zustand.phase]}
+          {zustand.phase === 'fertig' && `: ${zustand.angebot.ip}`}
+        </p>
+      )}
+    </div>
   );
 }

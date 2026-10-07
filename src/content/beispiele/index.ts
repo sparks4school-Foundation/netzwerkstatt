@@ -2,6 +2,7 @@ import type { StufeId } from '../../model/stufe';
 import erstesNetz from './erstes-netz.json';
 import fehlersucheWebseite from './fehlersuche-webseite.json';
 import heimnetzWlan from './heimnetz-wlan.json';
+import heimnetzeInternet from './heimnetze-internet.json';
 import paketvermittlung from './paketvermittlung.json';
 import schulnetzWebDns from './schulnetz-web-dns.json';
 import vermaschtesNetz from './vermaschtes-netz.json';
@@ -96,5 +97,16 @@ export const beispiele: Beispiel[] = [
     auftrag:
       'Wähle „Ausprobieren“ und schalte unter „Einstellungen“ „verschiedene Wege“ ein. Sende vom Sender einen Text „in Paketen“ an 192.168.2.10. In welcher Reihenfolge kommen die Teile an? Stelle dann die Leitung zum Empfänger auf 25 % Verlust und beobachte, was mit und ohne Bestätigungen passiert.',
     daten: paketvermittlung,
+  },
+  {
+    id: 'heimnetze-internet',
+    titel: 'Heimnetze und Internet (DHCP und NAT)',
+    stufe: '11',
+    bezug: 'TK 2, TK 5, TK 6',
+    beschreibung:
+      'Zwei Familien nutzen dieselben privaten Adressen (192.168.178.x). Ihre Heimrouter verbinden sie mit dem Internet.',
+    auftrag:
+      'Hol für „PC Familie A“ per DHCP eine IP-Adresse und verfolge den Ablauf im Sequenzdiagramm. Rufe dann www.beispiel.test auf. Welche Absender-Adresse sieht der Webserver? Sieh dir die NAT-Tabelle von Heimrouter A an. Warum dürfen beide Familien dieselben Adressen benutzen?',
+    daten: heimnetzeInternet,
   },
 ];

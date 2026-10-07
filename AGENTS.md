@@ -4,7 +4,7 @@ Diese Datei ist die zentrale Projektbeschreibung für Menschen **und** KI-Agente
 Sie enthält Ziel, Anforderungen, Architekturentscheidungen, Konventionen und Roadmap.
 Bei Widersprüchen zwischen Code und dieser Datei: nachfragen, dann diese Datei aktualisieren.
 
-> Status: **Phase 0–4b gemergt (live), Phase 4c (Paketvermittlung) umgesetzt** auf Branch `phase-4c-pakete` (Stand 2026-10-07). Nächster Schritt: Phase 4d (DHCP, vereinfachtes NAT).
+> Status: **Phase 0–4c gemergt (live), Phase 4d (DHCP, NAT) umgesetzt** auf Branch `phase-4d-dhcp-nat` (Stand 2026-10-07). Damit ist Klasse 11 inhaltlich abgedeckt. Nächster Schritt: Phase 5 (Unterricht: Aufgabenmodus, Hilfestufen, Export).
 > Repository: https://github.com/sparks4school-Foundation/netzwerkstatt (öffentlich) · Live: https://sparks4school-foundation.github.io/netzwerkstatt/
 
 ## 0. Schnellstart für Agenten
@@ -295,7 +295,18 @@ So bleibt die Simulation testbar, und später sind andere Oberflächen (z. B. Dr
 - **UI:** „In Paketen senden“ (Text, Zeichen pro Paket), Empfangspuffer im Panel des Empfängers (✓/✕ je Platz), Einstellungen (⚙) in der Simulationsleiste. Unter 1280 px zeigt die Leiste nur Symbole (Text bleibt für Screenreader).
 - **Beispiel:** „Paketvermittlung: Teile auf verschiedenen Wegen“ (Quadrat aus vier Routern, ein Weg mit langer Leitung).
 
-### 5.12 Aufgabenmodus
+### 5.12 DHCP und NAT (Phase 4d, Klasse 11)
+
+- **DHCP-Client:** Endgerät mit `dhcp: true` hat keine feste Adresse (`adresseVon` → `null`, keine Adressprobleme). Im Modus „Ausprobieren“: „IP-Adresse per DHCP holen“ → `Simulation.dhcpAnfordern()`.
+- **Ablauf:** Discover (Rundsendung `255.255.255.255`, Quelle `0.0.0.0`) → Offer → Request (Rundsendung) → Ack. **Rundsendungen** flutet der Switch an alle Anschlüsse außer dem Eingang; nicht zuständige Geräte protokollieren „ignoriert“ (`rundsendung-ignoriert`). Router leiten Rundsendungen nicht weiter. Ohne Antwort: `dhcp-fehlgeschlagen` nach `zeitlimit`.
+- **Vergabe:** Die erhaltene Adresse gilt nur in der laufenden Simulation (die Simulation ändert ihre Netz-Kopie: `ip`, Maske, Gateway, DNS, `dhcp: false`); die Datei behält `dhcp: true`. Knoten zeigen „DHCP“ bzw. „192.168.178.100 (DHCP)“.
+- **DHCP-Server** (Dienst `dhcp-server`: `von`, `bis`, `subnetzmaske`, `gateway`, `dnsServer`) auf Server, Computer **und Router** – nur in Klasse 11 installierbar. Vergibt die erste freie Adresse im Bereich (feste Adressen im Netz und frühere Vergaben werden übersprungen; derselbe Client bekommt dieselbe Adresse wieder).
+- **NAT** (`router.nat.aussenLeitungId`): Pakete aus privaten Netzen bekommen am Internet-Anschluss die öffentliche Router-Adresse; Antworten werden über die NAT-Tabelle (Zuordnung über die Anfrage-ID, Port nur zur Anschauung ab 50001) zurückübersetzt. **Routing:** Ein über seinen Internet-Anschluss erreichter NAT-Router gibt seine privaten Netze nicht weiter, und die Breitensuche läuft nicht durch ihn ins Heimnetz → zwei Heimnetze dürfen dieselben privaten Adressen haben; Geräte im Heimnetz sind von außen nicht erreichbar.
+- **Schichten:** DHCP über UDP 67/68; Netzzugang bei Rundsendung „alle im lokalen Rechnernetz (ff:ff:ff:ff:ff:ff)“.
+- **Beispiel:** „Heimnetze und Internet (DHCP und NAT)“.
+- **Achtung (Zustand-Selektoren):** Nie ein neues Array/Objekt im Selektor erzeugen (`useSim((z) => z.sim?.x() ?? [])`) – das führt zu einer Endlos-Render-Schleife. Stattdessen `z.sim` auswählen und außerhalb lesen.
+
+### 5.13 Aufgabenmodus
 
 - Lehrkraft baut ein Netz, schaltet „Aufgabe erstellen“ ein und legt fest: Arbeitsauftrag (Text), Hilfestufen (1–3, schrittweise aufdeckbar), welche Elemente gesperrt sind, optional eingebaute Fehler und automatische Prüfbedingungen (z. B. „Browser auf PC-1 lädt www.schule.test“).
 - Export als normale JSON-Datei → Verteilung über Moodle/Schulplattform/USB.
@@ -345,15 +356,15 @@ So bleibt die Simulation testbar, und später sind andere Oberflächen (z. B. Dr
 
 ## 7. Roadmap
 
-| Phase                    | Inhalt                                                                                                                                                                                                                           | Deckt ab                                    |
-| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
-| 0 – Grundgerüst ✅       | Repo, Vite/TS/React, Lint, Tests, CI, PWA-Hülle, Design-Tokens, Lizenz                                                                                                                                                           | Technik                                     |
-| 1 – Editor ✅            | Geräte platzieren/verbinden (Touch + Tastatur), Eigenschaften-Panel, Undo, Speichern/Laden JSON                                                                                                                                  | 7/8 TK 2                                    |
-| 2 – Engine-Kern ✅       | Event-Queue, Switch, IP im lokalen Netz, „Nachricht senden“, Animation, Pause/Schritt, Protokoll, Erkennung doppelter IP                                                                                                         | 7/8 TK 3                                    |
-| 3 – Dienste (**MVP**) ✅ | Dienste installieren, Webserver mit HTML-Editor, Browser, DNS-Server, Namensauflösung Schritt für Schritt, Dienste-Ansicht                                                                                                       | 7/8 TK 1, 4, 5 → **erster Unterrichtstest** |
-| 4 – Stufe 11             | **4a ✅** Router, Routingtabellen, mehrere Netze, Leitungsausfall/Umweg, privat/öffentlich · **4b ✅** Schichtenansicht, Sequenzdiagramm · **4c ✅** Pakete zerlegen/Verlust/Neuzusammensetzung · **4d** DHCP, vereinfachtes NAT | 11 TK 1–7                                   |
-| 5 – Unterricht           | Aufgabenmodus, Hilfestufen, Fehler einbauen, Blackbox/Whitebox, Druck/Export (Netzplan, Sequenzdiagramm), Glossar-Tooltips komplett                                                                                              | Querschnitt                                 |
-| 6 – Optional             | Verschlüsselung lesbar/nicht lesbar, Parität/Prüfsumme, MITM/Zertifikate, Kommunikationsformen, Filius-Import                                                                                                                    | Kann                                        |
+| Phase                    | Inhalt                                                                                                                                                                                                                              | Deckt ab                                    |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| 0 – Grundgerüst ✅       | Repo, Vite/TS/React, Lint, Tests, CI, PWA-Hülle, Design-Tokens, Lizenz                                                                                                                                                              | Technik                                     |
+| 1 – Editor ✅            | Geräte platzieren/verbinden (Touch + Tastatur), Eigenschaften-Panel, Undo, Speichern/Laden JSON                                                                                                                                     | 7/8 TK 2                                    |
+| 2 – Engine-Kern ✅       | Event-Queue, Switch, IP im lokalen Netz, „Nachricht senden“, Animation, Pause/Schritt, Protokoll, Erkennung doppelter IP                                                                                                            | 7/8 TK 3                                    |
+| 3 – Dienste (**MVP**) ✅ | Dienste installieren, Webserver mit HTML-Editor, Browser, DNS-Server, Namensauflösung Schritt für Schritt, Dienste-Ansicht                                                                                                          | 7/8 TK 1, 4, 5 → **erster Unterrichtstest** |
+| 4 – Stufe 11             | **4a ✅** Router, Routingtabellen, mehrere Netze, Leitungsausfall/Umweg, privat/öffentlich · **4b ✅** Schichtenansicht, Sequenzdiagramm · **4c ✅** Pakete zerlegen/Verlust/Neuzusammensetzung · **4d ✅** DHCP, vereinfachtes NAT | 11 TK 1–7                                   |
+| 5 – Unterricht           | Aufgabenmodus, Hilfestufen, Fehler einbauen, Blackbox/Whitebox, Druck/Export (Netzplan, Sequenzdiagramm), Glossar-Tooltips komplett                                                                                                 | Querschnitt                                 |
+| 6 – Optional             | Verschlüsselung lesbar/nicht lesbar, Parität/Prüfsumme, MITM/Zertifikate, Kommunikationsformen, Filius-Import                                                                                                                       | Kann                                        |
 
 ---
 

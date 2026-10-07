@@ -12,14 +12,20 @@ import {
   dnsEintragProbleme,
   installierbareDienste,
 } from '../model/dienste';
+import { stufenKonfiguration } from '../stufen';
 import { HtmlEditor } from './HtmlEditor';
+import { Textfeld } from './Textfeld';
 import { useApp } from './store';
 import styles from './Eigenschaften.module.css';
 
 /** Dienste eines Geräts installieren, entfernen und einrichten (Webseiten, DNS-Tabelle). */
 export function DiensteAbschnitt({ geraet }: { geraet: Geraet }) {
   const setzeDienste = useApp((z) => z.setzeDienste);
-  const installierbar = installierbareDienste(geraet.typ);
+  const stufe = useApp((z) => z.netz.stufe);
+  // DHCP gehört zu Klasse 11 (Bildungsplan 3.4.4.1); in 7/8 nicht anbieten.
+  const installierbar = installierbareDienste(geraet.typ).filter(
+    (art) => art !== 'dhcp-server' || stufenKonfiguration[stufe].zeigeRoutingtabelle,
+  );
   if (installierbar.length === 0) return null;
   const installiert = geraet.dienste ?? [];
   const fehlend = installierbar.filter((art) => !installiert.some((d) => d.art === art));
@@ -49,6 +55,7 @@ export function DiensteAbschnitt({ geraet }: { geraet: Geraet }) {
               </div>
               {d.art === 'webserver' && <Webseiten geraet={geraet} dienst={d} onAendern={ersetzen} />}
               {d.art === 'dns-server' && <DnsTabelle dienst={d} onAendern={ersetzen} />}
+              {d.art === 'dhcp-server' && <DhcpEinstellungen dienst={d} onAendern={ersetzen} />}
             </li>
           );
         })}
@@ -246,6 +253,38 @@ function DnsTabelle({
       >
         + {texte.eintragHinzufuegen}
       </button>
+    </div>
+  );
+}
+
+function DhcpEinstellungen({
+  dienst,
+  onAendern,
+}: {
+  dienst: Extract<Dienst, { art: 'dhcp-server' }>;
+  onAendern: (d: Dienst) => void;
+}) {
+  const feld = (name: keyof Omit<typeof dienst, 'art'>, beschriftung: string, platzhalter = '') => (
+    <Textfeld
+      key={`${name}-${dienst[name]}`}
+      klasse={`${styles.feld} ${styles.wachsen}`}
+      beschriftung={beschriftung}
+      wert={dienst[name]}
+      placeholder={platzhalter}
+      inputMode="decimal"
+      spellCheck={false}
+      onUebernehmen={(w) => w !== dienst[name] && onAendern({ ...dienst, [name]: w })}
+    />
+  );
+  return (
+    <div className={styles.unterliste}>
+      <div className={styles.zeile}>
+        {feld('von', texte.dhcpBereichVon)}
+        {feld('bis', texte.dhcpBereichBis)}
+      </div>
+      {feld('subnetzmaske', texte.subnetzmaske)}
+      {feld('gateway', texte.gateway, '192.168.0.1')}
+      {feld('dnsServer', texte.dnsServer, '192.168.0.2')}
     </div>
   );
 }

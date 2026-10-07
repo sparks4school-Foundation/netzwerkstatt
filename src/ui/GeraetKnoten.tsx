@@ -19,7 +19,12 @@ export type GeraetKnotenDaten = {
   /** Nur in der Dienste-Ansicht gesetzt: installierte Dienste. */
   dienste?: DienstArt[];
 };
-const dienstSymbol: Record<DienstArt, string> = { browser: '🌐', webserver: '📄', 'dns-server': '📖' };
+const dienstSymbol: Record<DienstArt, string> = {
+  browser: '🌐',
+  webserver: '📄',
+  'dns-server': '📖',
+  'dhcp-server': '🏷',
+};
 
 export type GeraetKnotenTyp = Node<GeraetKnotenDaten, 'geraet'>;
 

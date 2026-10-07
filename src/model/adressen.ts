@@ -52,7 +52,8 @@ const standardMaske = () => maskeZuZahl(STANDARD_SUBNETZMASKE)!;
 
 /** Gültige Adresse eines Endgeräts oder `null`, wenn keine/ungültige IP eingetragen ist. */
 export function adresseVon(g: Geraet): Adresse | null {
-  if (!hatIpAdresse(g) || !g.ip) return null;
+  // DHCP-Clients haben erst nach der Vergabe in der Simulation eine Adresse.
+  if (!hatIpAdresse(g) || !g.ip || g.dhcp) return null;
   const ip = ipZuZahl(g.ip);
   const maske = maskeZuZahl(g.subnetzmaske?.trim() || STANDARD_SUBNETZMASKE);
   if (ip === null || maske === null) return null;

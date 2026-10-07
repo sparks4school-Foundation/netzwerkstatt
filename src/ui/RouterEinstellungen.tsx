@@ -5,6 +5,7 @@ import type { Geraet, NetzDatei, RoutingEintrag } from '../model/datei';
 import { gegenueberName as gegenueber, leitungenVon } from '../model/netz';
 import { alsEintrag, automatischeRouten, routingEintragProbleme } from '../model/routing';
 import { stufenKonfiguration } from '../stufen';
+import { useSim } from './simStore';
 import { useApp } from './store';
 import { Textfeld } from './Textfeld';
 import { Umschalter } from './Umschalter';
@@ -26,6 +27,7 @@ export function RouterEinstellungen({
     <>
       <Anschluesse router={router} netz={netz} bearbeitbar={bearbeitbar} />
       <Routingtabelle router={router} netz={netz} bearbeitbar={bearbeitbar} />
+      {router.nat && <NatTabelle router={router} />}
     </>
   );
 }
@@ -99,6 +101,23 @@ function Anschluesse({
                   <code>{a?.ip || '–'}</code>
                   {a?.ip && ` / ${maskeKurz(a.subnetzmaske || '255.255.255.0')}`}
                 </p>
+              )}
+              {bearbeitbar ? (
+                <label className={styles.ankreuzen} title={texte.natHinweis}>
+                  <input
+                    type="checkbox"
+                    checked={router.nat?.aussenLeitungId === l.id}
+                    onChange={(e) => useApp.getState().setzeNat(router.id, e.target.checked ? l.id : null)}
+                  />
+                  <span>{texte.natAnschluss}</span>
+                </label>
+              ) : (
+                router.nat?.aussenLeitungId === l.id && (
+                  <p className={styles.hinweisKlein}>
+                    <span aria-hidden="true">🌐 </span>
+                    {texte.natAnschluss}
+                  </p>
+                )
               )}
               {eigene.length > 0 && (
                 <ul className={styles.probleme}>
@@ -275,6 +294,52 @@ function Routingtabelle({
           </button>
         </>
       )}
+    </section>
+  );
+}
+
+function NatTabelle({ router }: { router: Geraet }) {
+  // Wichtig: im Selektor nur die (stabile) Simulation auswählen – ein neues Array pro Aufruf
+  // würde endlos neu rendern lassen.
+  const sim = useSim((z) => z.sim);
+  useSim((z) => z.version);
+  const tabelle = sim?.natTabelle(router.id) ?? [];
+  const modus = useApp((z) => z.modus);
+  return (
+    <section className={styles.feld} aria-labelledby={`nat-${router.id}`}>
+      <span id={`nat-${router.id}`}>{texte.natTabelle}</span>
+      <p className={styles.hinweisKlein}>{texte.natHinweis}</p>
+      {modus === 'ausprobieren' &&
+        (tabelle.length === 0 ? (
+          <p className={styles.wert}>{texte.natLeer}</p>
+        ) : (
+          <table className={styles.dnsTabelle}>
+            <thead>
+              <tr>
+                <th scope="col">{texte.natInnen}</th>
+                <th scope="col">{texte.natAussen}</th>
+                <th scope="col">{texte.natZiel}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {tabelle.map((e) => (
+                <tr key={e.anfrageId}>
+                  <td>
+                    <code>{e.innenIp}</code>
+                  </td>
+                  <td>
+                    <code>
+                      {e.aussenIp}:{e.port}
+                    </code>
+                  </td>
+                  <td>
+                    <code>{e.zielIp}</code>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ))}
     </section>
   );
 }

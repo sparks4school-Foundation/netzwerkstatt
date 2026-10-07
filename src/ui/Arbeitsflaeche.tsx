@@ -30,6 +30,11 @@ import styles from './Arbeitsflaeche.module.css';
 export const DRAG_TYP = 'application/x-netzwerkstatt-geraet';
 
 const nodeTypes = { geraet: GeraetKnoten };
+/** Beim Einpassen Rand lassen, damit kein Gerät (und kein Paket) unter den Zoom-Knöpfen oben links liegt. */
+const EINPASSEN = {
+  maxZoom: 1.2,
+  padding: { top: '56px', left: '64px', right: '24px', bottom: '72px' },
+} as const;
 const edgeTypes = { leitung: LeitungKante, verbindung: VerbindungKante };
 
 /**
@@ -91,7 +96,16 @@ export function Arbeitsflaeche() {
     () =>
       netz.geraete.map((g) => {
         const kurz = (probleme.get(g.id) ?? []).map(adressProblemKurz);
-        const ip = hatIpAdresse(g) ? (g.ip ?? '') : undefined;
+        // DHCP-Clients: „DHCP“ bzw. die in der Simulation erhaltene Adresse (Simulation ist veränderlich → simVersion)
+        void simVersion;
+        const simGeraet = g.dhcp ? sim?.netz.geraete.find((x) => x.id === g.id) : undefined;
+        const ip = !hatIpAdresse(g)
+          ? undefined
+          : g.dhcp
+            ? simGeraet && !simGeraet.dhcp && simGeraet.ip
+              ? `${simGeraet.ip} (DHCP)`
+              : 'DHCP'
+            : (g.ip ?? '');
         // Router (Klasse 11): Adressen der Anschlüsse anzeigen
         const routerIps =
           g.typ === 'router' && zeigeRouter
@@ -116,7 +130,7 @@ export function Arbeitsflaeche() {
           ariaLabel: [g.name, ip && `IP-Adresse ${ip}`, ...kurz].filter(Boolean).join(', '),
         };
       }),
-    [netz.geraete, auswahl, probleme, bearbeitbar, dienstAnsicht, zeigeRouter],
+    [netz.geraete, auswahl, probleme, bearbeitbar, dienstAnsicht, zeigeRouter, sim, simVersion],
   );
 
   const edges = useMemo<(LeitungKanteTyp | VerbindungKanteTyp)[]>(() => {
@@ -242,13 +256,13 @@ export function Arbeitsflaeche() {
         minZoom={0.3}
         maxZoom={2.5}
         fitView
-        fitViewOptions={{ maxZoom: 1.2 }}
+        fitViewOptions={EINPASSEN}
         ariaLabelConfig={netzplanAriaTexte}
         colorMode="system"
       >
         <Background gap={24} />
         {/* Oben links: unten liegt im Modus „Ausprobieren“ die Simulationsleiste. */}
-        <Controls showInteractive={false} position="top-left" />
+        <Controls showInteractive={false} position="top-left" fitViewOptions={EINPASSEN} />
         <PaketAnzeige />
       </ReactFlow>
       {netz.geraete.length === 0 && (

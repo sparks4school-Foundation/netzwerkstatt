@@ -33,9 +33,7 @@ export function baueNetz(
 export function mitGeraet(
   netz: NetzDatei,
   id: string,
-  aenderung: Partial<
-    Pick<Geraet, 'ip' | 'dnsServer' | 'dienste' | 'gateway' | 'subnetzmaske' | 'anschluesse' | 'routing'>
-  >,
+  aenderung: Partial<Omit<Geraet, 'id' | 'typ'>>,
 ): NetzDatei {
   return geraetAendern(netz, id, aenderung);
 }
