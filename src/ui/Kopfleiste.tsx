@@ -47,6 +47,9 @@ export function Kopfleiste() {
         <button type="button" onClick={() => dateiEingabe.current?.click()}>
           {texte.oeffnen}
         </button>
+        <button type="button" onClick={() => useApp.getState().setzeBeispieleOffen(true)}>
+          {texte.beispiele}
+        </button>
         <input
           ref={dateiEingabe}
           type="file"

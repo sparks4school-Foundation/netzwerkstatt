@@ -1,0 +1,37 @@
+{
+  "format": "netzwerkstatt",
+  "version": 1,
+  "stufe": "7-8",
+  "titel": "Erstes lokales Rechnernetz",
+  "geraete": [
+    {
+      "id": "g1",
+      "typ": "computer",
+      "name": "Computer A",
+      "position": { "x": 0, "y": 0 },
+      "ip": "192.168.0.10",
+      "dienste": [{ "art": "browser" }]
+    },
+    {
+      "id": "g2",
+      "typ": "computer",
+      "name": "Computer B",
+      "position": { "x": 0, "y": 220 },
+      "ip": "192.168.0.11",
+      "dienste": [{ "art": "browser" }]
+    },
+    {
+      "id": "g3",
+      "typ": "computer",
+      "name": "Computer C",
+      "position": { "x": 480, "y": 110 },
+      "dienste": [{ "art": "browser" }]
+    },
+    { "id": "g4", "typ": "switch", "name": "Switch", "position": { "x": 240, "y": 110 } }
+  ],
+  "leitungen": [
+    { "id": "l1", "art": "kabel", "von": "g1", "nach": "g4" },
+    { "id": "l2", "art": "kabel", "von": "g2", "nach": "g4" },
+    { "id": "l3", "art": "kabel", "von": "g3", "nach": "g4" }
+  ]
+}

@@ -1,0 +1,42 @@
+.auftrag {
+  display: flex;
+  gap: var(--abstand-3);
+  align-items: flex-start;
+  padding: var(--abstand-2) var(--abstand-4);
+  border-bottom: 1px solid var(--farbe-rand);
+  border-left: 6px solid var(--farbe-akzent);
+  background: var(--farbe-flaeche);
+}
+
+.text {
+  flex: 1;
+}
+
+.text h2 {
+  margin: 0;
+  font-size: 0.9375rem;
+}
+
+.text p {
+  margin: 2px 0 0;
+  font-size: 0.9375rem;
+}
+
+.ausblenden {
+  border: 0;
+  background: none;
+  color: var(--farbe-text);
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.einblenden {
+  align-self: flex-start;
+  margin: var(--abstand-1) var(--abstand-4);
+  padding: 0 var(--abstand-3);
+  border: 1px solid var(--farbe-rand);
+  border-radius: var(--radius);
+  background: var(--farbe-hintergrund);
+  color: var(--farbe-text);
+  cursor: pointer;
+}

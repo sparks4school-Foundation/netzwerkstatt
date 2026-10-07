@@ -1,0 +1,83 @@
+.dialog {
+  width: min(760px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  padding: var(--abstand-4);
+  border: 2px solid var(--farbe-text);
+  border-radius: 12px;
+  background: var(--farbe-hintergrund);
+  color: var(--farbe-text);
+}
+
+.dialog::backdrop {
+  background: rgb(0 0 0 / 0.45);
+}
+
+.kopf {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.kopf h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.schliessen {
+  border: 0;
+  background: none;
+  color: var(--farbe-text);
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.einleitung {
+  margin: var(--abstand-2) 0 var(--abstand-4);
+  color: var(--farbe-text-leise);
+}
+
+.liste {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--abstand-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.karte {
+  display: flex;
+  flex-direction: column;
+  gap: var(--abstand-2);
+  padding: var(--abstand-3) var(--abstand-4);
+  border: 1px solid var(--farbe-rand);
+  border-radius: var(--radius);
+  background: var(--farbe-flaeche);
+}
+
+.karte h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.karte p {
+  margin: 0;
+}
+
+.meta {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--farbe-text-leise);
+}
+
+.karte button {
+  align-self: flex-start;
+  margin-top: auto;
+  padding: 0 var(--abstand-4);
+  border: 1px solid var(--farbe-akzent);
+  border-radius: var(--radius);
+  background: var(--farbe-akzent);
+  color: var(--farbe-akzent-text);
+  font-weight: 700;
+  cursor: pointer;
+}

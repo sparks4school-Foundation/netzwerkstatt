@@ -4,7 +4,7 @@ Diese Datei ist die zentrale Projektbeschreibung für Menschen **und** KI-Agente
 Sie enthält Ziel, Anforderungen, Architekturentscheidungen, Konventionen und Roadmap.
 Bei Widersprüchen zwischen Code und dieser Datei: nachfragen, dann diese Datei aktualisieren.
 
-> Status: **Phase 0–2 gemergt, Phase 3 (Dienste: Webserver, Browser, DNS) umgesetzt** auf Branch `phase-3-dienste` (Stand 2026-10-06). Nächster Schritt: erster Unterrichtstest, danach Phase 4 (Stufe 11).
+> Status: **Phase 0–3 gemergt (MVP live), Beispielnetze** auf Branch `beispielnetze` (Stand 2026-10-06). Nächster Schritt: erster Unterrichtstest, danach Phase 4 (Stufe 11).
 > Repository: https://github.com/sparks4school-Foundation/netzwerkstatt (öffentlich) · Live: https://sparks4school-foundation.github.io/netzwerkstatt/
 
 ## 0. Schnellstart für Agenten
@@ -260,7 +260,13 @@ So bleibt die Simulation testbar, und später sind andere Oberflächen (z. B. Dr
 - **Dienste-Ansicht (TK 1):** Umschalter „Infrastruktur | Dienste“ in der Kopfleiste. In „Dienste“: Geräte zeigen „Hardware: …“ und ihre Dienste (Server-Dienst: Rahmen durchgezogen, Client: gestrichelt); Leitungen gedimmt; logische Verbindungen (`ui/logischeVerbindungen.ts`: konfigurierte DNS-Server + tatsächlich beobachtete Kommunikation) als gebogene, gestrichelte Pfeile mit Protokollname, die Geräten ausweichen.
 - **Pakete** heißen in Animation und Protokoll nach ihrer Art (DNS-Anfrage, HTTP-Antwort …); Anfragen und Antworten unterscheiden sich in Symbol und Rahmen.
 
-### 5.8 Aufgabenmodus
+### 5.8 Beispielnetze
+
+- Liegen als normale Netzwerkstatt-Dateien in `src/content/beispiele/*.json` (CC BY-SA 4.0) und werden in `src/content/beispiele/index.ts` mit Titel, Stufe, Bildungsplanbezug, Beschreibung und **Arbeitsauftrag** registriert.
+- `beispiele.test.ts` prüft: Jede Datei ist gültig; das Schulnetz funktioniert sofort; die Fehlersuche enthält genau die beabsichtigten Fehler und ist nach dem Beheben lösbar. **Neue Beispiele immer mit so einem Test absichern.**
+- Öffnen über „Beispiele“ in der Kopfleiste oder auf der leeren Arbeitsfläche. Der Arbeitsauftrag erscheint als ausblendbare Leiste unter der Kopfleiste; er wird (noch) nicht in der Datei gespeichert – das übernimmt der Aufgabenmodus in Phase 5.
+
+### 5.9 Aufgabenmodus
 
 - Lehrkraft baut ein Netz, schaltet „Aufgabe erstellen“ ein und legt fest: Arbeitsauftrag (Text), Hilfestufen (1–3, schrittweise aufdeckbar), welche Elemente gesperrt sind, optional eingebaute Fehler und automatische Prüfbedingungen (z. B. „Browser auf PC-1 lädt www.schule.test“).
 - Export als normale JSON-Datei → Verteilung über Moodle/Schulplattform/USB.

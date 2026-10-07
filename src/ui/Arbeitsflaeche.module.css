@@ -15,7 +15,20 @@
   background: var(--farbe-flaeche);
   color: var(--farbe-text-leise);
   text-align: center;
-  pointer-events: none;
+}
+
+.hinweis p {
+  margin: 0 0 var(--abstand-2);
+}
+
+.hinweis button {
+  padding: 0 var(--abstand-4);
+  border: 1px solid var(--farbe-akzent);
+  border-radius: var(--radius);
+  background: var(--farbe-akzent);
+  color: var(--farbe-akzent-text);
+  font-weight: 700;
+  cursor: pointer;
 }
 
 .hinweisOben {

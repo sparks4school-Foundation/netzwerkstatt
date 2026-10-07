@@ -1,0 +1,61 @@
+{
+  "format": "netzwerkstatt",
+  "version": 1,
+  "stufe": "7-8",
+  "titel": "Fehlersuche: Warum lädt die Seite nicht?",
+  "geraete": [
+    {
+      "id": "g1",
+      "typ": "computer",
+      "name": "Computer 1",
+      "position": { "x": 0, "y": 0 },
+      "ip": "192.168.0.10",
+      "dnsServer": "192.168.0.4",
+      "dienste": [{ "art": "browser" }]
+    },
+    {
+      "id": "g2",
+      "typ": "computer",
+      "name": "Computer 2",
+      "position": { "x": 0, "y": 240 },
+      "ip": "192.168.0.2",
+      "dnsServer": "192.168.0.3",
+      "dienste": [{ "art": "browser" }]
+    },
+    { "id": "g3", "typ": "switch", "name": "Switch", "position": { "x": 260, "y": 120 } },
+    {
+      "id": "g4",
+      "typ": "server",
+      "name": "Webserver-Rechner",
+      "position": { "x": 540, "y": 0 },
+      "ip": "192.168.0.2",
+      "dienste": [
+        {
+          "art": "webserver",
+          "seiten": [
+            {
+              "pfad": "/",
+              "html": "<h1>Geschafft!</h1>\n<p>Alle Fehler sind behoben – die Schul-Website ist erreichbar.</p>\n"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "g5",
+      "typ": "server",
+      "name": "DNS-Rechner",
+      "position": { "x": 540, "y": 240 },
+      "ip": "192.168.0.3",
+      "dienste": [
+        { "art": "dns-server", "eintraege": [{ "domain": "www.schule.tset", "ip": "192.168.0.2" }] }
+      ]
+    }
+  ],
+  "leitungen": [
+    { "id": "l1", "art": "kabel", "von": "g1", "nach": "g3" },
+    { "id": "l2", "art": "kabel", "von": "g2", "nach": "g3" },
+    { "id": "l3", "art": "kabel", "von": "g4", "nach": "g3" },
+    { "id": "l4", "art": "kabel", "von": "g5", "nach": "g3" }
+  ]
+}
