@@ -1,22 +1,33 @@
-import { adresseVon, hatIpAdresse } from '../model/adressen';
+import { adresseVon, besitztIp, schnittstellenVon } from '../model/adressen';
 import type { Geraet, NetzDatei } from '../model/datei';
 import { dienstVon, hatDienst } from '../model/dienste';
 import { normalisiereDomain, normalisierePfad, zerlegeAdresse, type Adresse } from '../model/domain';
-import { gleichesNetz, ipZuZahl, netzBeschreibung } from '../model/ip';
-import { findeGeraet, leitungenVon } from '../model/netz';
+import { gleichesNetz, ipZuZahl, netzBeschreibung, zahlZuIp } from '../model/ip';
+import { findeGeraet, leitungAendern, leitungenVon } from '../model/netz';
+import { aktivesNetz, routeFuer, routenVon, type Route } from '../model/routing';
 import { istVerteilerImSegment, segment, weg } from '../model/topologie';
 import { Ereigniswarteschlange } from './ereignisse';
 
 /**
- * Simulation des Nachrichtenaustauschs (Phase 2: lokales Rechnernetz, Phase 3: DNS und HTTP).
+ * Simulation des Nachrichtenaustauschs (Phase 2: lokales Rechnernetz, Phase 3: DNS und HTTP,
+ * Phase 4a: Routing zwischen Netzen).
  *
  * Zeitmodell: Ein Schritt = jedes Paket, das gerade auf einer Leitung ist, kommt beim nächsten Gerät an
  * und wird dort verarbeitet. Animation und Geschwindigkeit sind Sache der Oberfläche.
- * Die Simulation arbeitet auf einer festen Kopie des Netzes; Änderungen erfordern eine neue Simulation.
+ * Die Simulation arbeitet auf einer Kopie des Netzes. Einzige erlaubte Änderung während des Laufs:
+ * Leitungen ausfallen lassen (Routingszenarien). Alles andere erfordert eine neue Simulation.
  */
 
-/** Nach so vielen Schritten ohne Antwort gibt der Browser auf. */
-export const ZEITLIMIT = 8;
+/** Startwert der Lebensdauer (TTL): So viele Router darf ein Paket höchstens passieren. */
+export const START_TTL = 16;
+
+/**
+ * Nach so vielen Schritten ohne Antwort gibt der Browser auf. Hängt von der Netzgröße ab, damit auch
+ * der längste mögliche Hin- und Rückweg hineinpasst (jede Leitung höchstens einmal je Richtung).
+ */
+export function zeitlimit(netz: NetzDatei): number {
+  return Math.max(8, 2 * netz.leitungen.length + 2);
+}
 
 /** Inhalt eines Pakets – entspricht der Anwendungsschicht. */
 export type PaketDaten =
@@ -37,6 +48,8 @@ export type Paket = PaketDaten & {
   zielIp: string;
   /** Gerät, das dieses Paket losgeschickt hat. */
   absenderId: string;
+  /** Lebensdauer: Jeder Router zieht 1 ab; bei 0 wird das Paket verworfen (verhindert Endlosschleifen). */
+  ttl: number;
   /** Bei Antworten: ID der Anfrage. */
   bezug?: string;
   /** Bei Antworten: Gerät, das die Anfrage gestellt hat (für den Hinweis „beim falschen Gerät“). */
@@ -51,6 +64,8 @@ export interface Unterwegs {
   leitungId: string;
   vonId: string;
   nachId: string;
+  /** IP-Adresse des nächsten Geräts auf dem Weg (Ziel selbst oder nächster Router). */
+  hopIp: string;
   start: number;
   ende: number;
 }
@@ -60,9 +75,19 @@ export type SendeFehler =
   | { grund: 'ziel-ungueltig' }
   | { grund: 'eigene-ip' }
   | { grund: 'nicht-verbunden' }
-  | { grund: 'anderes-netz'; eigenesNetz: string };
+  | { grund: 'leitung-ausgefallen' }
+  | { grund: 'anderes-netz'; eigenesNetz: string }
+  | { grund: 'gateway-falsch'; eigenesNetz: string; gateway: string }
+  | { grund: 'keine-route' };
 
-export type VerwerfGrund = 'kein-ziel' | 'falsche-ip' | 'router';
+export type VerwerfGrund = 'kein-ziel' | 'falsche-ip' | 'keine-route' | 'ttl' | 'leitung-ausgefallen';
+
+/** Die Route, nach der ein Router entschieden hat – für Protokoll und Whitebox-Ansicht. */
+export interface GenutzteRoute {
+  ziel: string;
+  subnetzmaske: string;
+  gateway: string | null;
+}
 
 export type BrowserFehler =
   | { grund: 'kein-browser' }
@@ -81,7 +106,7 @@ export type BrowserZustand =
 
 export type ProtokollEintrag = { nr: number; zeit: number; geraetId: string } & (
   | { art: 'gesendet'; nachId: string; paket: Paket }
-  | { art: 'weitergeleitet'; nachId: string; paket: Paket }
+  | { art: 'weitergeleitet'; nachId: string; paket: Paket; route?: GenutzteRoute }
   | { art: 'empfangen'; paket: Paket }
   | { art: 'verworfen'; paket: Paket; grund: VerwerfGrund }
   | { art: 'nicht-gesendet'; zielIp: string; fehler: SendeFehler }
@@ -100,13 +125,15 @@ export interface LogischeVerbindung {
 }
 
 type Ereignis =
-  | { typ: 'ankunft'; paket: Paket; geraetId: string; leitungId: string }
+  | { typ: 'ankunft'; paket: Paket; geraetId: string; leitungId: string; hopIp: string }
   | { typ: 'zeitablauf'; geraetId: string; anfrageId: string };
 
 type OhneKopf<T> = T extends unknown ? Omit<T, 'nr' | 'zeit'> : never;
 
 export class Simulation {
-  readonly netz: NetzDatei;
+  #netz: NetzDatei;
+  /** Netz ohne ausgefallene Leitungen – darauf laufen Weg- und Segmentberechnungen. */
+  #aktiv: NetzDatei;
   #warteschlange = new Ereigniswarteschlange<Ereignis>();
   #unterwegs: Unterwegs[] = [];
   #protokoll: ProtokollEintrag[] = [];
@@ -114,7 +141,18 @@ export class Simulation {
   #paketNr = 0;
 
   constructor(netz: NetzDatei) {
-    this.netz = netz;
+    this.#netz = netz;
+    this.#aktiv = aktivesNetz(netz);
+  }
+
+  get netz(): NetzDatei {
+    return this.#netz;
+  }
+
+  /** Störung während des Laufs: Leitung fällt aus oder funktioniert wieder. */
+  leitungAusfallen(leitungId: string, ausgefallen: boolean): void {
+    this.#netz = leitungAendern(this.#netz, leitungId, { ausgefallen });
+    this.#aktiv = aktivesNetz(this.#netz);
   }
 
   get zeit(): number {
@@ -183,95 +221,175 @@ export class Simulation {
   schritt(): void {
     const zeit = this.#warteschlange.naechsteZeit;
     if (zeit === undefined) return;
-    while (this.#warteschlange.naechsteZeit === zeit) {
-      const { daten } = this.#warteschlange.naechstes()!;
-      if (daten.typ === 'ankunft') {
-        this.#unterwegs = this.#unterwegs.filter((u) => u.paket !== daten.paket);
-        this.#verarbeite(daten.paket, daten.geraetId);
-      } else {
-        this.#zeitAbgelaufen(daten.geraetId, daten.anfrageId);
-      }
+    // Erst alle ankommenden Pakete, dann abgelaufene Zeitlimits: Kommt die Antwort genau im letzten
+    // erlaubten Schritt an, zählt sie noch.
+    const jetzt: Ereignis[] = [];
+    while (this.#warteschlange.naechsteZeit === zeit) jetzt.push(this.#warteschlange.naechstes()!.daten);
+    for (const daten of jetzt) {
+      if (daten.typ !== 'ankunft') continue;
+      this.#unterwegs = this.#unterwegs.filter((u) => u.paket !== daten.paket);
+      this.#verarbeite(daten.paket, daten.geraetId, daten.leitungId, daten.hopIp);
+    }
+    for (const daten of jetzt) {
+      if (daten.typ === 'zeitablauf') this.#zeitAbgelaufen(daten.geraetId, daten.anfrageId);
     }
   }
 
   // --- Senden -------------------------------------------------------------------------------------
 
-  #neuesPaket(von: Geraet, zielIp: string, daten: PaketDaten, bezug?: Paket): Paket {
+  #neuesPaket(von: Geraet, zielIp: string, daten: PaketDaten, bezug?: Paket, quelleIp?: string): Paket {
     return {
       ...daten,
       id: `p${++this.#paketNr}`,
-      quelleIp: von.ip?.trim() ?? '',
+      quelleIp: quelleIp ?? von.ip?.trim() ?? '',
       zielIp: zielIp.trim(),
       absenderId: von.id,
+      ttl: START_TTL,
       ...(bezug ? { bezug: bezug.id, erwartetVon: bezug.absenderId } : {}),
     };
   }
 
   /** Prüft, baut und verschickt ein Paket; Fehler werden protokolliert und zurückgegeben. */
   #sende(von: Geraet, zielIp: string, daten: PaketDaten, bezug?: Paket): SendeFehler | null {
+    if (von.typ === 'router') return this.#routerSendet(von, zielIp, daten, bezug);
     return this.#sendePaket(von, this.#neuesPaket(von, zielIp, daten, bezug));
   }
 
   #sendePaket(von: Geraet, paket: Paket): SendeFehler | null {
-    const fehler = this.#pruefeSenden(von, paket.zielIp);
-    if (fehler) {
-      this.#protokolliere({ art: 'nicht-gesendet', geraetId: von.id, zielIp: paket.zielIp, fehler });
-      return fehler;
+    const ergebnis = this.#pruefeSenden(von, paket.zielIp);
+    if ('grund' in ergebnis) {
+      this.#protokolliere({
+        art: 'nicht-gesendet',
+        geraetId: von.id,
+        zielIp: paket.zielIp,
+        fehler: ergebnis,
+      });
+      return ergebnis;
     }
     if (istAnfrage(paket)) this.#hinweisBeiDoppelterZielIp(von, paket);
-    const leitung = leitungenVon(this.netz, von.id)[0]!;
-    this.#aufLeitung(von.id, leitung.id, paket, 'gesendet');
+    const leitung = leitungenVon(this.#aktiv, von.id)[0]!;
+    this.#aufLeitung(von.id, leitung.id, paket, 'gesendet', ergebnis.hopIp);
     return null;
   }
 
-  #pruefeSenden(von: Geraet, zielIpText: string): SendeFehler | null {
+  /**
+   * Prüft, ob ein Endgerät senden kann, und bestimmt den nächsten Schritt: Liegt das Ziel im eigenen Netz,
+   * geht es direkt dorthin, sonst zum Gateway (Router).
+   */
+  #pruefeSenden(von: Geraet, zielIpText: string): SendeFehler | { hopIp: string } {
     const eigene = adresseVon(von);
     if (!eigene) return { grund: 'keine-ip' };
     const ziel = ipZuZahl(zielIpText);
     if (ziel === null) return { grund: 'ziel-ungueltig' };
     if (ziel === eigene.ip) return { grund: 'eigene-ip' };
-    if (leitungenVon(this.netz, von.id).length === 0) return { grund: 'nicht-verbunden' };
-    if (!gleichesNetz(ziel, eigene.ip, eigene.maske)) {
-      return { grund: 'anderes-netz', eigenesNetz: netzBeschreibung(eigene.ip, eigene.maske) };
+    if (leitungenVon(this.#netz, von.id).length === 0) return { grund: 'nicht-verbunden' };
+    if (leitungenVon(this.#aktiv, von.id).length === 0) return { grund: 'leitung-ausgefallen' };
+    if (gleichesNetz(ziel, eigene.ip, eigene.maske)) return { hopIp: zahlZuIp(ziel) };
+    const eigenesNetz = netzBeschreibung(eigene.ip, eigene.maske);
+    if (eigene.gateway === null) return { grund: 'anderes-netz', eigenesNetz };
+    if (!gleichesNetz(eigene.gateway, eigene.ip, eigene.maske)) {
+      return { grund: 'gateway-falsch', eigenesNetz, gateway: zahlZuIp(eigene.gateway) };
     }
+    return { hopIp: zahlZuIp(eigene.gateway) };
+  }
+
+  /** Ein Router schickt selbst ein Paket (z. B. Antwort auf eine an ihn gerichtete Nachricht). */
+  #routerSendet(router: Geraet, zielIp: string, daten: PaketDaten, bezug?: Paket): SendeFehler | null {
+    const ziel = ipZuZahl(zielIp);
+    const route = ziel === null ? null : routeFuer(routenVon(this.#netz, router.id), ziel);
+    if (!route) {
+      const fehler: SendeFehler = { grund: 'keine-route' };
+      this.#protokolliere({ art: 'nicht-gesendet', geraetId: router.id, zielIp, fehler });
+      return fehler;
+    }
+    const quelle = schnittstellenVon(this.#netz, router).find((s) => s.leitungId === route.leitungId);
+    const paket = this.#neuesPaket(router, zielIp, daten, bezug, quelle ? zahlZuIp(quelle.ip) : '');
+    this.#aufLeitung(router.id, route.leitungId, paket, 'gesendet', zahlZuIp(route.gateway ?? ziel!), route);
     return null;
   }
 
-  #aufLeitung(vonId: string, leitungId: string, paket: Paket, art: 'gesendet' | 'weitergeleitet') {
-    const leitung = this.netz.leitungen.find((l) => l.id === leitungId)!;
+  /** Router leitet ein fremdes Paket nach seiner Routingtabelle weiter. */
+  #routerLeitetWeiter(router: Geraet, eingang: Paket) {
+    const paket = { ...eingang, ttl: eingang.ttl - 1 };
+    if (paket.ttl <= 0) {
+      this.#protokolliere({ art: 'verworfen', geraetId: router.id, paket, grund: 'ttl' });
+      return;
+    }
+    const ziel = ipZuZahl(paket.zielIp)!;
+    const route = routeFuer(routenVon(this.#netz, router.id), ziel);
+    if (!route) {
+      this.#protokolliere({ art: 'verworfen', geraetId: router.id, paket, grund: 'keine-route' });
+      return;
+    }
+    this.#aufLeitung(
+      router.id,
+      route.leitungId,
+      paket,
+      'weitergeleitet',
+      zahlZuIp(route.gateway ?? ziel),
+      route,
+    );
+  }
+
+  #aufLeitung(
+    vonId: string,
+    leitungId: string,
+    paket: Paket,
+    art: 'gesendet' | 'weitergeleitet',
+    hopIp: string,
+    route?: Route,
+  ) {
+    const leitung = this.#netz.leitungen.find((l) => l.id === leitungId);
+    if (!leitung || leitung.ausgefallen) {
+      // z. B. manuelle Routingtabelle zeigt auf eine ausgefallene Leitung
+      this.#protokolliere({ art: 'verworfen', geraetId: vonId, paket, grund: 'leitung-ausgefallen' });
+      return;
+    }
     const nachId = leitung.von === vonId ? leitung.nach : leitung.von;
     const zeit = this.zeit;
-    this.#unterwegs.push({ paket, leitungId, vonId, nachId, start: zeit, ende: zeit + 1 });
-    this.#warteschlange.planen(1, { typ: 'ankunft', paket, geraetId: nachId, leitungId });
-    this.#protokolliere({ art, geraetId: vonId, nachId, paket });
+    this.#unterwegs.push({ paket, leitungId, vonId, nachId, hopIp, start: zeit, ende: zeit + 1 });
+    this.#warteschlange.planen(1, { typ: 'ankunft', paket, geraetId: nachId, leitungId, hopIp });
+    const genutzt = route && {
+      ziel: zahlZuIp(route.ziel),
+      subnetzmaske: zahlZuIp(route.maske),
+      gateway: route.gateway === null ? null : zahlZuIp(route.gateway),
+    };
+    this.#protokolliere({ art, geraetId: vonId, nachId, paket, ...(genutzt ? { route: genutzt } : {}) });
   }
 
   // --- Empfangen ----------------------------------------------------------------------------------
 
-  #verarbeite(paket: Paket, geraetId: string) {
+  #verarbeite(paket: Paket, geraetId: string, leitungId: string, hopIp: string) {
     const g = this.#geraet(geraetId);
 
+    // Leitung ist ausgefallen, während das Paket unterwegs war → es kommt nie an.
+    if (this.#netz.leitungen.find((l) => l.id === leitungId)?.ausgefallen) {
+      this.#protokolliere({ art: 'verworfen', geraetId, paket, grund: 'leitung-ausgefallen' });
+      return;
+    }
+
     if (istVerteilerImSegment(g)) {
-      // Switch/Access Point: zum nächstgelegenen Gerät mit der Ziel-IP weiterleiten.
-      const ziel = this.#naechstesGeraetMitIp(g.id, paket.zielIp);
-      const pfad = ziel && weg(this.netz, g.id, ziel.id);
+      // Switch/Access Point: zum nächstgelegenen Gerät mit der IP des nächsten Schritts weiterleiten.
+      const ziel = this.#naechstesGeraetMitIp(g.id, hopIp);
+      const pfad = ziel && weg(this.#aktiv, g.id, ziel.id);
       if (!pfad?.[0]) {
         this.#protokolliere({ art: 'verworfen', geraetId, paket, grund: 'kein-ziel' });
         return;
       }
-      this.#aufLeitung(g.id, pfad[0].id, paket, 'weitergeleitet');
+      this.#aufLeitung(g.id, pfad[0].id, paket, 'weitergeleitet', hopIp);
       return;
     }
 
-    if (g.typ === 'router') {
-      // Weiterleiten zwischen Netzen (Routing) folgt in Phase 4.
-      this.#protokolliere({ art: 'verworfen', geraetId, paket, grund: 'router' });
-      return;
-    }
-
-    const eigene = adresseVon(g);
-    if (!eigene || eigene.ip !== ipZuZahl(paket.zielIp)) {
+    const hop = ipZuZahl(hopIp);
+    if (hop === null || !besitztIp(this.#netz, g, hop)) {
       this.#protokolliere({ art: 'verworfen', geraetId, paket, grund: 'falsche-ip' });
+      return;
+    }
+
+    const ziel = ipZuZahl(paket.zielIp)!;
+    if (!besitztIp(this.#netz, g, ziel)) {
+      if (g.typ === 'router') this.#routerLeitetWeiter(g, paket);
+      else this.#protokolliere({ art: 'verworfen', geraetId, paket, grund: 'falsche-ip' });
       return;
     }
 
@@ -383,7 +501,11 @@ export class Simulation {
   #setzeBrowser(geraetId: string, zustand: BrowserZustand): BrowserZustand {
     this.#browser.set(geraetId, zustand);
     if ('anfrageId' in zustand) {
-      this.#warteschlange.planen(ZEITLIMIT, { typ: 'zeitablauf', geraetId, anfrageId: zustand.anfrageId });
+      this.#warteschlange.planen(zeitlimit(this.#netz), {
+        typ: 'zeitablauf',
+        geraetId,
+        anfrageId: zustand.anfrageId,
+      });
     }
     return zustand;
   }
@@ -418,14 +540,15 @@ export class Simulation {
 
   // --- Hilfen -------------------------------------------------------------------------------------
 
-  /** Nächstgelegenes Endgerät im Segment, dessen IP-Adresse passt (Breitensuche, deterministisch). */
-  #naechstesGeraetMitIp(vonId: string, zielIpText: string): Geraet | undefined {
-    const ziel = ipZuZahl(zielIpText);
+  /** Nächstgelegenes Gerät im Segment, dem diese IP-Adresse gehört (Breitensuche, deterministisch). */
+  #naechstesGeraetMitIp(vonId: string, ipText: string): Geraet | undefined {
+    const ip = ipZuZahl(ipText);
+    if (ip === null) return undefined;
     let bestes: { g: Geraet; laenge: number } | undefined;
-    for (const id of segment(this.netz, vonId)) {
-      const g = findeGeraet(this.netz, id);
-      if (!g || !hatIpAdresse(g) || adresseVon(g)?.ip !== ziel) continue;
-      const laenge = weg(this.netz, vonId, id)?.length;
+    for (const id of segment(this.#aktiv, vonId)) {
+      const g = findeGeraet(this.#netz, id);
+      if (!g || !besitztIp(this.#netz, g, ip)) continue;
+      const laenge = weg(this.#aktiv, vonId, id)?.length;
       if (laenge !== undefined && (!bestes || laenge < bestes.laenge)) bestes = { g, laenge };
     }
     return bestes?.g;
@@ -433,9 +556,10 @@ export class Simulation {
 
   #hinweisBeiDoppelterZielIp(von: Geraet, paket: Paket) {
     const ziel = ipZuZahl(paket.zielIp);
-    const gleiche = [...segment(this.netz, von.id)].filter((id) => {
-      const g = findeGeraet(this.netz, id);
-      return id !== von.id && g && adresseVon(g)?.ip === ziel;
+    if (ziel === null) return;
+    const gleiche = [...segment(this.#aktiv, von.id)].filter((id) => {
+      const g = findeGeraet(this.#netz, id);
+      return id !== von.id && g && besitztIp(this.#netz, g, ziel);
     });
     if (gleiche.length > 1) {
       this.#protokolliere({ art: 'ip-doppelt', geraetId: von.id, paket, geraeteIds: gleiche });
@@ -443,7 +567,7 @@ export class Simulation {
   }
 
   #geraet(id: string): Geraet {
-    const g = findeGeraet(this.netz, id);
+    const g = findeGeraet(this.#netz, id);
     if (!g) throw new Error(`Unbekanntes Gerät ${id}`);
     return g;
   }

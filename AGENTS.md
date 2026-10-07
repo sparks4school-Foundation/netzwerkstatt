@@ -4,7 +4,7 @@ Diese Datei ist die zentrale Projektbeschreibung für Menschen **und** KI-Agente
 Sie enthält Ziel, Anforderungen, Architekturentscheidungen, Konventionen und Roadmap.
 Bei Widersprüchen zwischen Code und dieser Datei: nachfragen, dann diese Datei aktualisieren.
 
-> Status: **Phase 0–3 gemergt (MVP live), Beispielnetze** auf Branch `beispielnetze` (Stand 2026-10-06). Nächster Schritt: erster Unterrichtstest, danach Phase 4 (Stufe 11).
+> Status: **Phase 0–3 und Beispielnetze gemergt (MVP live), Phase 4a (Routing) umgesetzt** auf Branch `phase-4a-routing` (Stand 2026-10-07). Nächster Schritt: Phase 4b (Schichtenmodell, Sequenzdiagramm).
 > Repository: https://github.com/sparks4school-Foundation/netzwerkstatt (öffentlich) · Live: https://sparks4school-foundation.github.io/netzwerkstatt/
 
 ## 0. Schnellstart für Agenten
@@ -254,7 +254,7 @@ So bleibt die Simulation testbar, und später sind andere Oberflächen (z. B. Dr
 
 - **Dienste** (`model/dienste.ts`, Feld `dienste` am Gerät): `browser` (Client), `webserver` (Seiten als `{pfad, html}`), `dns-server` (Tabelle `{domain, ip}`). Webserver/DNS-Server auf Server **und** Computer installierbar (Glossar: Server als Dienst ≠ Server als Hardware). Computer/Smartphone/Spielkonsole bekommen beim Hinzufügen einen Browser.
 - **DNS-Server am Client:** Feld `dnsServer` (IP-Adresse), mit Vorschlag aus dem lokalen Rechnernetz.
-- **Ablauf in der Engine:** `aufrufen(geraet, eingabe)` → bei Domain: DNS-Anfrage → DNS-Antwort → HTTP-Anfrage → HTTP-Antwort (200/404); bei IP-Adresse direkt HTTP. Läuft auf dem Ziel der Dienst nicht, kommt ein Paket „Abgelehnt“. Ohne Antwort gibt der Browser nach `ZEITLIMIT` (8) Schritten auf. Erledigte Zeitlimits werden aus der Warteschlange entfernt, damit die Simulation sofort endet.
+- **Ablauf in der Engine:** `aufrufen(geraet, eingabe)` → bei Domain: DNS-Anfrage → DNS-Antwort → HTTP-Anfrage → HTTP-Antwort (200/404); bei IP-Adresse direkt HTTP. Läuft auf dem Ziel der Dienst nicht, kommt ein Paket „Abgelehnt“. Ohne Antwort gibt der Browser nach `zeitlimit(netz)` Schritten auf (mind. 8, wächst mit der Zahl der Leitungen; Ankünfte werden vor Zeitlimits verarbeitet; leere Warteschritte laufen in der UI schnell durch). Erledigte Zeitlimits werden aus der Warteschlange entfernt, damit die Simulation sofort endet.
 - **Browser-Zustand** pro Gerät (`dns` → `laden` → `fertig`/`fehler`) liegt in der Simulation; Fehler (`BrowserFehler`) werden in `content/meldungen.ts` zu Titel + Erklärung mit Tipp.
 - **Sicherheit der Schülerseiten** (`ui/seitenDokument.ts`): (1) `bereinigeHtml` entfernt Skripte, iframes, Formulare, Event-Attribute und alle externen URLs (nur `data:` erlaubt); Links werden zu `data-href`. (2) CSP `default-src 'none'`. (3) Browser-Fenster: iframe `sandbox="allow-scripts"` **ohne** `allow-same-origin` mit einem eigenen Link-Skript (CSP-Nonce), das Klicks per `postMessage` meldet. Vorschau im Editor: `sandbox=""`, gar keine Skripte. **Hinweis:** Eine reine Meta-CSP hat in Chrome externe Bilder nicht zuverlässig verhindert; WebKit liefert keine von außen angehängten Klick-Handler in skriptlose iframes – deshalb diese Kombination. E2E-Test „Webseite darf nichts von außen nachladen“ sichert das ab.
 - **Dienste-Ansicht (TK 1):** Umschalter „Infrastruktur | Dienste“ in der Kopfleiste. In „Dienste“: Geräte zeigen „Hardware: …“ und ihre Dienste (Server-Dienst: Rahmen durchgezogen, Client: gestrichelt); Leitungen gedimmt; logische Verbindungen (`ui/logischeVerbindungen.ts`: konfigurierte DNS-Server + tatsächlich beobachtete Kommunikation) als gebogene, gestrichelte Pfeile mit Protokollname, die Geräten ausweichen.
@@ -266,7 +266,17 @@ So bleibt die Simulation testbar, und später sind andere Oberflächen (z. B. Dr
 - `beispiele.test.ts` prüft: Jede Datei ist gültig; das Schulnetz funktioniert sofort; die Fehlersuche enthält genau die beabsichtigten Fehler und ist nach dem Beheben lösbar. **Neue Beispiele immer mit so einem Test absichern.**
 - Öffnen über „Beispiele“ in der Kopfleiste oder auf der leeren Arbeitsfläche. Der Arbeitsauftrag erscheint als ausblendbare Leiste unter der Kopfleiste; er wird (noch) nicht in der Datei gespeichert – das übernimmt der Aufgabenmodus in Phase 5.
 
-### 5.9 Aufgabenmodus
+### 5.9 Routing (Phase 4a, Klasse 11)
+
+- **Schnittstellen** (`model/adressen.ts`): Endgerät = eine IP, Router = eine IP je Anschluss (`anschluesse[leitungId] = {ip, subnetzmaske}`). Adressprüfung (doppelt, anderes Netz, reserviert) arbeitet je lokalem Rechnernetz über alle Schnittstellen; Probleme an Routern tragen `anschluss`.
+- **Lokales Rechnernetz hinter einer Leitung:** `segmentAnLeitung` / `segmentSchluessel` in `model/topologie.ts` (Switch/AP → dessen Segment, sonst Punkt-zu-Punkt).
+- **Routingtabelle** (`model/routing.ts`): `automatisch` = direkt angeschlossene Netze + Breitensuche über Router, die sich ein Segment und IP-Netz teilen (wenigste Router gewinnt, deterministisch), **ohne ausgefallene Leitungen** → Umweg im vermaschten Netz. `manuell` = gespeicherte Tabelle gilt unverändert (Lernanlass: passt sich bei Ausfall nicht an). Auswahl per längster Präfix-Übereinstimmung.
+- **Engine:** Endgeräte schicken Pakete in fremde Netze an ihr **Gateway** (Fehler: kein Gateway / Gateway außerhalb des eigenen Netzes). Jede Übertragung trägt `hopIp` (IP des nächsten Geräts); Switches leiten nach `hopIp` weiter. Router: TTL − 1 (Start 16; bei 0 verworfen → Routing-Schleifen sichtbar), Route suchen, weiterleiten; Protokoll nennt die genutzte Route. Router beantworten Nachrichten an ihre eigenen Adressen.
+- **Leitungsausfall:** `leitung.ausgefallen`; im Panel einer Leitung umschaltbar, auch während der Simulation (`Simulation.leitungAusfallen`). Darstellung: rot, kurz gestrichelt, Etikett „✕ ausgefallen“.
+- **Oberfläche (nur Klasse 11):** Router-Panel mit Anschlüssen (IP, Maske, Vorschlag .1) und Routingtabelle (automatisch: nur lesen; von Hand: Zeilen bearbeiten, „Automatische Tabelle übernehmen“). Im Modus „Ausprobieren“ bleibt die Tabelle sichtbar (Whitebox). Endgeräte: Gateway mit Vorschlag, Kennzeichnung „privat (lokal)“ / „öffentlich (global)“ (TK 2). In 7/8 erklärt das Router-Panel nur, wozu Router da sind.
+- **Beispiele:** „Zwei Netze mit Router“ und „Vermaschtes Netz: Umweg bei Ausfall“ (beide Klasse 11, mit Tests).
+
+### 5.10 Aufgabenmodus
 
 - Lehrkraft baut ein Netz, schaltet „Aufgabe erstellen“ ein und legt fest: Arbeitsauftrag (Text), Hilfestufen (1–3, schrittweise aufdeckbar), welche Elemente gesperrt sind, optional eingebaute Fehler und automatische Prüfbedingungen (z. B. „Browser auf PC-1 lädt www.schule.test“).
 - Export als normale JSON-Datei → Verteilung über Moodle/Schulplattform/USB.
@@ -316,15 +326,15 @@ So bleibt die Simulation testbar, und später sind andere Oberflächen (z. B. Dr
 
 ## 7. Roadmap
 
-| Phase                    | Inhalt                                                                                                                                                                         | Deckt ab                                    |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------- |
-| 0 – Grundgerüst ✅       | Repo, Vite/TS/React, Lint, Tests, CI, PWA-Hülle, Design-Tokens, Lizenz                                                                                                         | Technik                                     |
-| 1 – Editor ✅            | Geräte platzieren/verbinden (Touch + Tastatur), Eigenschaften-Panel, Undo, Speichern/Laden JSON                                                                                | 7/8 TK 2                                    |
-| 2 – Engine-Kern ✅       | Event-Queue, Switch, IP im lokalen Netz, „Nachricht senden“, Animation, Pause/Schritt, Protokoll, Erkennung doppelter IP                                                       | 7/8 TK 3                                    |
-| 3 – Dienste (**MVP**) ✅ | Dienste installieren, Webserver mit HTML-Editor, Browser, DNS-Server, Namensauflösung Schritt für Schritt, Dienste-Ansicht                                                     | 7/8 TK 1, 4, 5 → **erster Unterrichtstest** |
-| 4 – Stufe 11             | Router + Routingtabellen, mehrere Netze, private/öffentliche Adressen (vereinfachtes NAT), Schichtenansicht, Pakete zerlegen/Verlust/Neuzusammensetzung, DHCP, Sequenzdiagramm | 11 TK 1–7                                   |
-| 5 – Unterricht           | Aufgabenmodus, Hilfestufen, Fehler einbauen, Blackbox/Whitebox, Druck/Export (Netzplan, Sequenzdiagramm), Glossar-Tooltips komplett                                            | Querschnitt                                 |
-| 6 – Optional             | Verschlüsselung lesbar/nicht lesbar, Parität/Prüfsumme, MITM/Zertifikate, Kommunikationsformen, Filius-Import                                                                  | Kann                                        |
+| Phase                    | Inhalt                                                                                                                                                                                                                     | Deckt ab                                    |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| 0 – Grundgerüst ✅       | Repo, Vite/TS/React, Lint, Tests, CI, PWA-Hülle, Design-Tokens, Lizenz                                                                                                                                                     | Technik                                     |
+| 1 – Editor ✅            | Geräte platzieren/verbinden (Touch + Tastatur), Eigenschaften-Panel, Undo, Speichern/Laden JSON                                                                                                                            | 7/8 TK 2                                    |
+| 2 – Engine-Kern ✅       | Event-Queue, Switch, IP im lokalen Netz, „Nachricht senden“, Animation, Pause/Schritt, Protokoll, Erkennung doppelter IP                                                                                                   | 7/8 TK 3                                    |
+| 3 – Dienste (**MVP**) ✅ | Dienste installieren, Webserver mit HTML-Editor, Browser, DNS-Server, Namensauflösung Schritt für Schritt, Dienste-Ansicht                                                                                                 | 7/8 TK 1, 4, 5 → **erster Unterrichtstest** |
+| 4 – Stufe 11             | **4a ✅** Router, Routingtabellen, mehrere Netze, Leitungsausfall/Umweg, privat/öffentlich · **4b** Schichtenansicht, Sequenzdiagramm · **4c** Pakete zerlegen/Verlust/Neuzusammensetzung · **4d** DHCP, vereinfachtes NAT | 11 TK 1–7                                   |
+| 5 – Unterricht           | Aufgabenmodus, Hilfestufen, Fehler einbauen, Blackbox/Whitebox, Druck/Export (Netzplan, Sequenzdiagramm), Glossar-Tooltips komplett                                                                                        | Querschnitt                                 |
+| 6 – Optional             | Verschlüsselung lesbar/nicht lesbar, Parität/Prüfsumme, MITM/Zertifikate, Kommunikationsformen, Filius-Import                                                                                                              | Kann                                        |
 
 ---
 

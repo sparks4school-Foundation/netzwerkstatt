@@ -47,6 +47,25 @@ export const geraetSchema = z.object({
   /** IP-Adresse des DNS-Servers, den dieses Gerät für die Namensauflösung fragt. */
   dnsServer: z.string().optional(),
   dienste: z.array(dienstSchema).optional(),
+  /** Nur Router: IP-Adresse und Subnetzmaske je Anschluss (Schlüssel = Leitungs-ID). */
+  anschluesse: z
+    .record(z.string(), z.object({ ip: z.string(), subnetzmaske: z.string().optional() }))
+    .optional(),
+  /** Nur Router: automatisch berechnete oder von Hand gepflegte Routingtabelle. */
+  routing: z
+    .object({
+      modus: z.enum(['automatisch', 'manuell']),
+      tabelle: z.array(
+        z.object({
+          ziel: z.string(),
+          subnetzmaske: z.string(),
+          /** Nächster Router; leer = Zielnetz hängt direkt an diesem Anschluss. */
+          gateway: z.string(),
+          leitungId: z.string(),
+        }),
+      ),
+    })
+    .optional(),
 });
 
 export const leitungSchema = z.object({
@@ -54,6 +73,8 @@ export const leitungSchema = z.object({
   art: z.enum(['kabel', 'wlan']),
   von: id,
   nach: id,
+  /** Störung simulieren: Über eine ausgefallene Leitung geht nichts mehr. */
+  ausgefallen: z.boolean().optional(),
 });
 
 export const netzDateiSchema = z
@@ -85,6 +106,7 @@ export type Dienst = z.infer<typeof dienstSchema>;
 export type DienstArt = Dienst['art'];
 export type Leitung = z.infer<typeof leitungSchema>;
 export type LeitungsArt = Leitung['art'];
+export type RoutingEintrag = NonNullable<Geraet['routing']>['tabelle'][number];
 
 export type LadeErgebnis = { ok: true; netz: NetzDatei } | { ok: false; meldung: string };
 

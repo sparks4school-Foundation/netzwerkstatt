@@ -71,4 +71,37 @@ describe('Beispielnetze', () => {
     bisZumEnde(sim);
     expect(sim.browser('g1')).toMatchObject({ phase: 'fertig', status: 200 });
   });
+
+  it('Zwei Netze: Website aus dem anderen Netz über DNS und Router erreichbar', () => {
+    const netz = lade('zwei-netze-router');
+    expect(adressProbleme(netz).size).toBe(0);
+    const sim = new Simulation(netz);
+    sim.aufrufen('g1', 'www.netz-b.test');
+    bisZumEnde(sim);
+    expect(sim.browser('g1')).toMatchObject({ phase: 'fertig', status: 200 });
+    expect(sim.protokoll.some((e) => e.art === 'weitergeleitet' && e.geraetId === 'g4')).toBe(true);
+  });
+
+  it('Vermaschtes Netz: kurzer Weg, bei Ausfall Umweg', () => {
+    const netz = lade('vermaschtes-netz');
+    expect(adressProbleme(netz).size).toBe(0);
+    const router = (sim: Simulation) =>
+      sim.protokoll
+        .filter(
+          (e) =>
+            e.art === 'weitergeleitet' &&
+            e.paket.art === 'nachricht' &&
+            ['g3', 'g4', 'g5'].includes(e.geraetId),
+        )
+        .map((e) => e.geraetId);
+    const sim = new Simulation(netz);
+    sim.senden('g1', '192.168.2.10', 'x');
+    bisZumEnde(sim);
+    expect(router(sim)).toEqual(['g3', 'g5']);
+    const umweg = new Simulation(netz);
+    umweg.leitungAusfallen('l5', true);
+    umweg.senden('g1', '192.168.2.10', 'x');
+    bisZumEnde(umweg);
+    expect(router(umweg)).toEqual(['g3', 'g4', 'g5']);
+  });
 });

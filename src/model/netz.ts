@@ -69,24 +69,54 @@ export function geraetHinzufuegen(
 export function geraetAendern(
   netz: NetzDatei,
   id: string,
-  aenderung: Partial<
-    Pick<Geraet, 'name' | 'position' | 'ip' | 'subnetzmaske' | 'gateway' | 'dnsServer' | 'dienste'>
-  >,
+  aenderung: Partial<Omit<Geraet, 'id' | 'typ'>>,
 ): NetzDatei {
   return { ...netz, geraete: netz.geraete.map((g) => (g.id === id ? { ...g, ...aenderung } : g)) };
 }
 
 /** Entfernt ein Gerät samt aller daran hängenden Leitungen. */
+/** Entfernt ein Gerät samt aller daran hängenden Leitungen. */
 export function geraetEntfernen(netz: NetzDatei, id: string): NetzDatei {
-  return {
-    ...netz,
-    geraete: netz.geraete.filter((g) => g.id !== id),
-    leitungen: netz.leitungen.filter((l) => l.von !== id && l.nach !== id),
-  };
+  const weg = netz.leitungen.filter((l) => l.von === id || l.nach === id).map((l) => l.id);
+  return aufraeumen(
+    {
+      ...netz,
+      geraete: netz.geraete.filter((g) => g.id !== id),
+      leitungen: netz.leitungen.filter((l) => !weg.includes(l.id)),
+    },
+    weg,
+  );
 }
 
 export function leitungEntfernen(netz: NetzDatei, id: string): NetzDatei {
-  return { ...netz, leitungen: netz.leitungen.filter((l) => l.id !== id) };
+  return aufraeumen({ ...netz, leitungen: netz.leitungen.filter((l) => l.id !== id) }, [id]);
+}
+
+export function leitungAendern(
+  netz: NetzDatei,
+  id: string,
+  aenderung: Partial<Pick<Leitung, 'ausgefallen'>>,
+): NetzDatei {
+  return { ...netz, leitungen: netz.leitungen.map((l) => (l.id === id ? { ...l, ...aenderung } : l)) };
+}
+
+/** Entfernt Router-Anschlüsse und Routen, die auf gelöschte Leitungen verweisen. */
+function aufraeumen(netz: NetzDatei, geloeschteLeitungen: string[]): NetzDatei {
+  if (geloeschteLeitungen.length === 0) return netz;
+  return {
+    ...netz,
+    geraete: netz.geraete.map((g) => {
+      if (!g.anschluesse && !g.routing) return g;
+      const anschluesse = g.anschluesse
+        ? Object.fromEntries(Object.entries(g.anschluesse).filter(([l]) => !geloeschteLeitungen.includes(l)))
+        : undefined;
+      const routing = g.routing && {
+        ...g.routing,
+        tabelle: g.routing.tabelle.filter((r) => !geloeschteLeitungen.includes(r.leitungId)),
+      };
+      return { ...g, ...(anschluesse ? { anschluesse } : {}), ...(routing ? { routing } : {}) };
+    }),
+  };
 }
 
 /**
@@ -160,4 +190,11 @@ export function verbinden(
     id,
     netz: { ...netz, leitungen: [...netz.leitungen, { id, art, von: vonId, nach: nachId }] },
   };
+}
+
+/** Name des Geräts am anderen Ende einer Leitung. */
+export function gegenueberName(netz: NetzDatei, geraetId: string, leitungId: string): string {
+  const l = netz.leitungen.find((x) => x.id === leitungId);
+  if (!l) return '?';
+  return findeGeraet(netz, l.von === geraetId ? l.nach : l.von)?.name ?? '?';
 }

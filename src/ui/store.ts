@@ -1,12 +1,20 @@
 import { create } from 'zustand';
 import { geraeteTexte } from '../content/geraete';
 import { verbindungsMeldung } from '../content/meldungen';
-import { leeresNetz, type Dienst, type GeraetTyp, type LeitungsArt, type NetzDatei } from '../model/datei';
+import {
+  leeresNetz,
+  type Dienst,
+  type Geraet,
+  type GeraetTyp,
+  type LeitungsArt,
+  type NetzDatei,
+} from '../model/datei';
 import {
   geraetAendern,
   freiePosition,
   geraetEntfernen,
   geraetHinzufuegen,
+  leitungAendern,
   leitungEntfernen,
   verbinden,
 } from '../model/netz';
@@ -48,6 +56,9 @@ interface AppZustand {
     werte: { ip?: string; subnetzmaske?: string; gateway?: string; dnsServer?: string },
   ) => void;
   setzeDienste: (id: string, dienste: Dienst[]) => void;
+  setzeAnschluss: (routerId: string, leitungId: string, werte: { ip: string; subnetzmaske?: string }) => void;
+  setzeRouting: (routerId: string, routing: NonNullable<Geraet['routing']>) => void;
+  setzeLeitungAusgefallen: (leitungId: string, ausgefallen: boolean) => void;
   /** Verschieben während des Ziehens: ohne Verlaufseintrag. Vorher `merkeZustand()` aufrufen. */
   verschieben: (id: string, position: { x: number; y: number }) => void;
   merkeZustand: () => void;
@@ -117,6 +128,16 @@ export const useApp = create<AppZustand>()((set, get) => ({
 
   setzeNetzwerk: (id, werte) => set((z) => mitVerlauf(z, geraetAendern(z.netz, id, werte))),
   setzeDienste: (id, dienste) => set((z) => mitVerlauf(z, geraetAendern(z.netz, id, { dienste }))),
+  setzeAnschluss: (routerId, leitungId, werte) =>
+    set((z) => {
+      const router = z.netz.geraete.find((g) => g.id === routerId);
+      const anschluesse = { ...(router?.anschluesse ?? {}), [leitungId]: werte };
+      return mitVerlauf(z, geraetAendern(z.netz, routerId, { anschluesse }));
+    }),
+  setzeRouting: (routerId, routing) =>
+    set((z) => mitVerlauf(z, geraetAendern(z.netz, routerId, { routing }))),
+  setzeLeitungAusgefallen: (leitungId, ausgefallen) =>
+    set((z) => mitVerlauf(z, leitungAendern(z.netz, leitungId, { ausgefallen }))),
 
   verschieben: (id, position) => set((z) => ({ netz: geraetAendern(z.netz, id, { position }) })),
 

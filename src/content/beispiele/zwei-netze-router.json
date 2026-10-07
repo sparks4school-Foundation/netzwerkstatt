@@ -1,0 +1,82 @@
+{
+  "format": "netzwerkstatt",
+  "version": 1,
+  "stufe": "11",
+  "titel": "Zwei Netze mit Router",
+  "geraete": [
+    {
+      "id": "g1",
+      "typ": "computer",
+      "name": "Computer A1",
+      "position": { "x": 0, "y": 0 },
+      "ip": "192.168.1.10",
+      "subnetzmaske": "255.255.255.0",
+      "gateway": "192.168.1.1",
+      "dnsServer": "192.168.2.2",
+      "dienste": [{ "art": "browser" }]
+    },
+    {
+      "id": "g2",
+      "typ": "computer",
+      "name": "Computer A2",
+      "position": { "x": 0, "y": 240 },
+      "ip": "192.168.1.11",
+      "subnetzmaske": "255.255.255.0",
+      "gateway": "192.168.1.1",
+      "dnsServer": "192.168.2.2",
+      "dienste": [{ "art": "browser" }]
+    },
+    { "id": "g3", "typ": "switch", "name": "Switch A", "position": { "x": 240, "y": 120 } },
+    {
+      "id": "g4",
+      "typ": "router",
+      "name": "Router",
+      "position": { "x": 480, "y": 120 },
+      "anschluesse": {
+        "l3": { "ip": "192.168.1.1", "subnetzmaske": "255.255.255.0" },
+        "l4": { "ip": "192.168.2.1", "subnetzmaske": "255.255.255.0" }
+      }
+    },
+    { "id": "g5", "typ": "switch", "name": "Switch B", "position": { "x": 720, "y": 120 } },
+    {
+      "id": "g6",
+      "typ": "server",
+      "name": "Server B",
+      "position": { "x": 960, "y": 0 },
+      "ip": "192.168.2.2",
+      "subnetzmaske": "255.255.255.0",
+      "gateway": "192.168.2.1",
+      "dienste": [
+        {
+          "art": "webserver",
+          "seiten": [
+            {
+              "pfad": "/",
+              "html": "<h1>Hallo aus Netz B</h1>\n<p>Diese Seite kommt von 192.168.2.2 – über den Router aus einem anderen Netz.</p>\n"
+            }
+          ]
+        },
+        { "art": "dns-server", "eintraege": [{ "domain": "www.netz-b.test", "ip": "192.168.2.2" }] }
+      ]
+    },
+    {
+      "id": "g7",
+      "typ": "computer",
+      "name": "Computer B1",
+      "position": { "x": 960, "y": 240 },
+      "ip": "192.168.2.10",
+      "subnetzmaske": "255.255.255.0",
+      "gateway": "192.168.2.1",
+      "dnsServer": "192.168.2.2",
+      "dienste": [{ "art": "browser" }]
+    }
+  ],
+  "leitungen": [
+    { "id": "l1", "art": "kabel", "von": "g1", "nach": "g3" },
+    { "id": "l2", "art": "kabel", "von": "g2", "nach": "g3" },
+    { "id": "l3", "art": "kabel", "von": "g3", "nach": "g4" },
+    { "id": "l4", "art": "kabel", "von": "g4", "nach": "g5" },
+    { "id": "l5", "art": "kabel", "von": "g6", "nach": "g5" },
+    { "id": "l6", "art": "kabel", "von": "g7", "nach": "g5" }
+  ]
+}

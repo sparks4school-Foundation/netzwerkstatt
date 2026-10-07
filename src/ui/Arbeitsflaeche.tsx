@@ -14,6 +14,7 @@ import { adressProblemKurz } from '../content/meldungen';
 import { netzplanAriaTexte, texte } from '../content/texte';
 import { adressProbleme, hatIpAdresse } from '../model/adressen';
 import { geraetTypSchema } from '../model/datei';
+import { stufenKonfiguration } from '../stufen';
 import { GERAET_BREITE, GERAET_HOEHE } from '../model/netz';
 import { GeraetKnoten, type GeraetKnotenTyp } from './GeraetKnoten';
 import { BrowserFenster } from './BrowserFenster';
@@ -40,6 +41,7 @@ export function Arbeitsflaeche() {
   const auswahl = useApp((z) => z.auswahl);
   const bearbeitbar = useApp((z) => z.modus === 'aufbauen');
   const dienstAnsicht = useApp((z) => z.ansicht === 'dienste');
+  const zeigeRouter = useApp((z) => stufenKonfiguration[z.netz.stufe].zeigeRoutingtabelle);
   const sim = useSim((z) => z.sim);
   const simVersion = useSim((z) => z.version);
   const { verschieben, merkeZustand, waehle, verbinde, geraetHinzufuegen } = useApp.getState();
@@ -90,6 +92,13 @@ export function Arbeitsflaeche() {
       netz.geraete.map((g) => {
         const kurz = (probleme.get(g.id) ?? []).map(adressProblemKurz);
         const ip = hatIpAdresse(g) ? (g.ip ?? '') : undefined;
+        // Router (Klasse 11): Adressen der Anschlüsse anzeigen
+        const routerIps =
+          g.typ === 'router' && zeigeRouter
+            ? Object.values(g.anschluesse ?? {})
+                .map((a) => a.ip)
+                .filter(Boolean)
+            : undefined;
         return {
           id: g.id,
           type: 'geraet',
@@ -98,6 +107,7 @@ export function Arbeitsflaeche() {
             typ: g.typ,
             name: g.name,
             ip,
+            routerIps,
             probleme: kurz,
             verbindbar: bearbeitbar,
             dienste: dienstAnsicht ? (g.dienste ?? []).map((d) => d.art) : undefined,
@@ -106,7 +116,7 @@ export function Arbeitsflaeche() {
           ariaLabel: [g.name, ip && `IP-Adresse ${ip}`, ...kurz].filter(Boolean).join(', '),
         };
       }),
-    [netz.geraete, auswahl, probleme, bearbeitbar, dienstAnsicht],
+    [netz.geraete, auswahl, probleme, bearbeitbar, dienstAnsicht, zeigeRouter],
   );
 
   const edges = useMemo<(LeitungKanteTyp | VerbindungKanteTyp)[]>(() => {
@@ -115,9 +125,9 @@ export function Arbeitsflaeche() {
       type: 'leitung',
       source: l.von,
       target: l.nach,
-      data: { art: l.art, gedimmt: dienstAnsicht },
+      data: { art: l.art, gedimmt: dienstAnsicht, ausgefallen: !!l.ausgefallen },
       selected: auswahl?.art === 'leitung' && auswahl.id === l.id,
-      ariaLabel: `${l.art === 'wlan' ? 'WLAN' : 'Kabel'}: ${
+      ariaLabel: `${l.ausgefallen ? `${texte.ausgefallen}: ` : ''}${l.art === 'wlan' ? 'WLAN' : 'Kabel'}: ${
         netz.geraete.find((g) => g.id === l.von)?.name
       } – ${netz.geraete.find((g) => g.id === l.nach)?.name}`,
     }));

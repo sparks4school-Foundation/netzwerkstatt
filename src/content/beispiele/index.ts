@@ -3,6 +3,8 @@ import erstesNetz from './erstes-netz.json';
 import fehlersucheWebseite from './fehlersuche-webseite.json';
 import heimnetzWlan from './heimnetz-wlan.json';
 import schulnetzWebDns from './schulnetz-web-dns.json';
+import vermaschtesNetz from './vermaschtes-netz.json';
+import zweiNetzeRouter from './zwei-netze-router.json';
 
 /**
  * Beispielnetze zum Sofort-Loslegen (Inhalte unter CC BY-SA 4.0).
@@ -62,5 +64,26 @@ export const beispiele: Beispiel[] = [
     auftrag:
       'Auf Computer 1 soll www.schule.test angezeigt werden – das klappt aber nicht. Finde und behebe die drei Fehler. Tipp: Lies die Fehlermeldungen im Browser und im Protokoll genau.',
     daten: fehlersucheWebseite,
+  },
+  {
+    id: 'zwei-netze-router',
+    titel: 'Zwei Netze mit Router',
+    stufe: '11',
+    bezug: 'TK 2, TK 3',
+    beschreibung:
+      'Zwei lokale Rechnernetze, verbunden über einen Router. Webserver und DNS-Server stehen in Netz B.',
+    auftrag:
+      'Rufe auf Computer A1 die Seite www.netz-b.test auf. Verfolge im Protokoll, welche Rolle der Router spielt. Sieh dir dann seine Routingtabelle an: Woher weiß er, wohin er die Pakete schicken muss? Was passiert, wenn du bei Computer A1 das Gateway löschst?',
+    daten: zweiNetzeRouter,
+  },
+  {
+    id: 'vermaschtes-netz',
+    titel: 'Vermaschtes Netz: Umweg bei Ausfall',
+    stufe: '11',
+    bezug: 'TK 3 · Routing',
+    beschreibung: 'Drei Router im Dreieck. Zwischen PC A und PC B gibt es zwei Wege.',
+    auftrag:
+      'Schicke von PC A eine Nachricht an 192.168.2.10 und notiere, über welche Router sie läuft. Lass dann die Leitung zwischen Router 1 und Router 3 ausfallen und sende erneut. Stelle anschließend die Routingtabelle von Router 1 auf „von Hand“ und wiederhole den Versuch. Erkläre den Unterschied.',
+    daten: vermaschtesNetz,
   },
 ];
