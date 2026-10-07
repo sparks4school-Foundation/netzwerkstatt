@@ -32,6 +32,16 @@ export const dienstSchema = z.discriminatedUnion('art', [
     art: z.literal('dns-server'),
     eintraege: z.array(z.object({ domain: z.string(), ip: z.string() })),
   }),
+  z.object({
+    art: z.literal('dhcp-server'),
+    /** Adressbereich, aus dem vergeben wird (einschließlich). */
+    von: z.string(),
+    bis: z.string(),
+    subnetzmaske: z.string(),
+    /** Wird an die Clients mitgegeben (darf leer sein). */
+    gateway: z.string(),
+    dnsServer: z.string(),
+  }),
 ]);
 
 export const geraetSchema = z.object({
@@ -46,6 +56,10 @@ export const geraetSchema = z.object({
   gateway: z.string().optional(),
   /** IP-Adresse des DNS-Servers, den dieses Gerät für die Namensauflösung fragt. */
   dnsServer: z.string().optional(),
+  /** Endgerät holt sich IP-Adresse, Maske, Gateway und DNS-Server automatisch per DHCP. */
+  dhcp: z.boolean().optional(),
+  /** Nur Router: Dieser Anschluss führt ins Internet; Pakete aus privaten Netzen werden übersetzt (NAT). */
+  nat: z.object({ aussenLeitungId: z.string() }).optional(),
   dienste: z.array(dienstSchema).optional(),
   /** Nur Router: IP-Adresse und Subnetzmaske je Anschluss (Schlüssel = Leitungs-ID). */
   anschluesse: z

@@ -2,7 +2,7 @@ import { adresseVon, schnittstellenVon } from '../model/adressen';
 import type { NetzDatei } from '../model/datei';
 import { ipZuZahl } from '../model/ip';
 import { findeGeraet } from '../model/netz';
-import type { Paket, ProtokollEintrag } from './simulation';
+import { RUNDSENDUNG, type Paket, type ProtokollEintrag } from './simulation';
 
 /**
  * Zerlegt ein Paket auf einem Abschnitt seines Weges in die vier Schichten (Bildungsplan 11, TK 1 und 7).
@@ -78,10 +78,50 @@ function anwendung(p: Paket): Schichten['anwendung'] {
       return { protokoll: 'Nachricht in Teilen', felder: [{ name: 'Inhalt', wert: `„${p.inhalt}“` }] };
     case 'bestaetigung':
       return { protokoll: 'Nachricht in Teilen', felder: [{ name: 'Inhalt', wert: '– (nur Bestätigung)' }] };
+    case 'dhcp-discover':
+      return {
+        protokoll: 'DHCP',
+        felder: [
+          { name: 'Typ', wert: 'Discover (Wer vergibt Adressen?)' },
+          { name: 'Gerät', wert: p.clientId },
+        ],
+      };
+    case 'dhcp-request':
+      return {
+        protokoll: 'DHCP',
+        felder: [
+          { name: 'Typ', wert: 'Request' },
+          { name: 'Gewünscht', wert: p.ip },
+          { name: 'Server', wert: p.serverIp },
+        ],
+      };
+    case 'dhcp-offer':
+    case 'dhcp-ack':
+      return {
+        protokoll: 'DHCP',
+        felder: [
+          { name: 'Typ', wert: p.art === 'dhcp-offer' ? 'Offer (Angebot)' : 'Ack (Bestätigung)' },
+          { name: 'IP-Adresse', wert: p.ip },
+          { name: 'Maske', wert: p.subnetzmaske },
+          { name: 'Gateway', wert: p.gateway || '–' },
+          { name: 'DNS-Server', wert: p.dnsServer || '–' },
+        ],
+      };
   }
 }
 
 function transport(p: Paket): Schichten['transport'] {
+  if (p.art.startsWith('dhcp-')) {
+    // DHCP: Server lauscht auf UDP 67, Clients auf UDP 68
+    const vomClient = p.art === 'dhcp-discover' || p.art === 'dhcp-request';
+    return {
+      protokoll: 'UDP',
+      felder: [
+        { name: 'Quellport', wert: vomClient ? '68' : '67' },
+        { name: 'Zielport', wert: vomClient ? '67' : '68' },
+      ],
+    };
+  }
   if (p.art === 'teil' || p.art === 'bestaetigung') {
     // Paketorientierte Übertragung: Folgenummer bzw. Bestätigung stehen in der Transportschicht (wie TCP).
     const port = clientPort(p.sendungId);
@@ -155,9 +195,12 @@ export function schichtenVon(
         { name: 'Absender', wert: `${von?.name ?? vonId} (${macAdresse(vonId, leitungId)})` },
         {
           name: 'Empfänger',
-          wert: empfaenger
-            ? `${empfaenger.name} (${macAdresse(empfaenger.id, empfaengerLeitung ?? '')})`
-            : `unbekannt (${hopIp})`,
+          wert:
+            hopIp === RUNDSENDUNG
+              ? 'alle im lokalen Rechnernetz (Rundsendung, ff:ff:ff:ff:ff:ff)'
+              : empfaenger
+                ? `${empfaenger.name} (${macAdresse(empfaenger.id, empfaengerLeitung ?? '')})`
+                : `unbekannt (${hopIp})`,
         },
       ],
     },

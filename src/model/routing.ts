@@ -1,6 +1,6 @@
 import { schnittstellenVon, type Schnittstelle } from './adressen';
 import type { Geraet, NetzDatei, RoutingEintrag } from './datei';
-import { STANDARD_SUBNETZMASKE, ipZuZahl, maskeZuZahl, netzanteil, zahlZuIp } from './ip';
+import { STANDARD_SUBNETZMASKE, ipZuZahl, istPrivat, maskeZuZahl, netzanteil, zahlZuIp } from './ip';
 import { findeGeraet } from './netz';
 import { segmentSchluessel } from './topologie';
 
@@ -63,16 +63,30 @@ export function automatischeRouten(netzGesamt: NetzDatei, routerId: string): Rou
   }
 
   // 2. Breitensuche über Router, die sich ein lokales Rechnernetz teilen
+  // NAT: Erreicht man einen NAT-Router über seinen Internet-Anschluss, bleiben seine privaten Netze
+  // unsichtbar und man läuft nicht durch ihn hindurch ins Heimnetz (wie im echten Internet).
   type Eintrag = {
     routerId: string;
     ersterSchritt: { leitungId: string; gateway: number } | null;
     metrik: number;
+    vonAussen: boolean;
   };
+  const natAussen = (id: string) => findeGeraet(netz, id)?.nat?.aussenLeitungId;
+  const versteckt = (x: RouterSchnittstelle, vonAussen: boolean) =>
+    vonAussen &&
+    natAussen(x.geraetId) !== undefined &&
+    x.leitungId !== natAussen(x.geraetId) &&
+    istPrivat(x.ip);
   const besucht = new Set([routerId]);
-  const schlange: Eintrag[] = [{ routerId, ersterSchritt: null, metrik: 0 }];
+  const schlange: Eintrag[] = [{ routerId, ersterSchritt: null, metrik: 0, vonAussen: false }];
   while (schlange.length) {
     const aktuell = schlange.shift()!;
-    for (const s of alle.filter((x) => x.geraetId === aktuell.routerId)) {
+    const ausgaenge = alle.filter(
+      (x) =>
+        x.geraetId === aktuell.routerId &&
+        !(aktuell.vonAussen && natAussen(x.geraetId) !== undefined && x.leitungId !== natAussen(x.geraetId)),
+    );
+    for (const s of ausgaenge) {
       // Nachbarrouter im selben Segment und im selben IP-Netz (sonst verstehen sie sich nicht)
       for (const n of alle) {
         if (n.geraetId === aktuell.routerId || besucht.has(n.geraetId) || n.segment !== s.segment) continue;
@@ -80,13 +94,15 @@ export function automatischeRouten(netzGesamt: NetzDatei, routerId: string): Rou
         besucht.add(n.geraetId);
         const ersterSchritt = aktuell.ersterSchritt ?? { leitungId: s.leitungId, gateway: n.ip };
         const metrik = aktuell.metrik + 1;
+        const vonAussen = natAussen(n.geraetId) === n.leitungId;
         for (const ns of alle.filter((x) => x.geraetId === n.geraetId)) {
+          if (versteckt(ns, vonAussen)) continue;
           const k = schluessel(ns.ip, ns.maske);
           if (!routen.has(k)) {
             routen.set(k, { ziel: netzanteil(ns.ip, ns.maske), maske: ns.maske, ...ersterSchritt, metrik });
           }
         }
-        schlange.push({ routerId: n.geraetId, ersterSchritt, metrik });
+        schlange.push({ routerId: n.geraetId, ersterSchritt, metrik, vonAussen });
       }
     }
   }

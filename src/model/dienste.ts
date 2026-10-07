@@ -10,8 +10,10 @@ import { segment } from './topologie';
  * - Webserver und DNS-Server (Server-Dienste): auf Server UND Computer – ein Computer kann auch Server sein.
  */
 const erlaubt: Partial<Record<GeraetTyp, DienstArt[]>> = {
-  computer: ['browser', 'webserver', 'dns-server'],
-  server: ['browser', 'webserver', 'dns-server'],
+  computer: ['browser', 'webserver', 'dns-server', 'dhcp-server'],
+  server: ['browser', 'webserver', 'dns-server', 'dhcp-server'],
+  // Wie ein Heimrouter: vergibt Adressen im lokalen Netz
+  router: ['dhcp-server'],
   smartphone: ['browser'],
   spielkonsole: ['browser'],
 };
@@ -30,6 +32,8 @@ export function neuerDienst(art: DienstArt, geraet: Geraet): Dienst {
       return { art, seiten: [{ pfad: STARTSEITE, html: beispielSeite(geraet.name) }] };
     case 'dns-server':
       return { art, eintraege: [] };
+    case 'dhcp-server':
+      return { art, ...dhcpVorschlag(geraet) };
   }
 }
 
@@ -87,4 +91,18 @@ export function dnsServerVorschlag(netz: NetzDatei, geraetId: string): string {
     (g) => g.id !== geraetId && imSegment.has(g.id) && hatDienst(g, 'dns-server') && adresseVon(g),
   );
   return server?.ip?.trim() ?? '';
+}
+
+/** Sinnvoller Startwert für einen DHCP-Server: Bereich .100–.199 im Netz des Geräts. */
+function dhcpVorschlag(g: Geraet): Omit<Extract<Dienst, { art: 'dhcp-server' }>, 'art'> {
+  const eigeneIp = g.typ === 'router' ? Object.values(g.anschluesse ?? {})[0]?.ip : g.ip;
+  const zahl = eigeneIp ? ipZuZahl(eigeneIp) : null;
+  const basis = zahl === null ? '192.168.0' : eigeneIp!.split('.').slice(0, 3).join('.');
+  return {
+    von: `${basis}.100`,
+    bis: `${basis}.199`,
+    subnetzmaske: '255.255.255.0',
+    gateway: g.typ === 'router' && eigeneIp ? eigeneIp : '',
+    dnsServer: '',
+  };
 }

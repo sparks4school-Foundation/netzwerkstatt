@@ -53,11 +53,12 @@ interface AppZustand {
   umbenennen: (id: string, name: string) => void;
   setzeNetzwerk: (
     id: string,
-    werte: { ip?: string; subnetzmaske?: string; gateway?: string; dnsServer?: string },
+    werte: { ip?: string; subnetzmaske?: string; gateway?: string; dnsServer?: string; dhcp?: boolean },
   ) => void;
   setzeDienste: (id: string, dienste: Dienst[]) => void;
   setzeAnschluss: (routerId: string, leitungId: string, werte: { ip: string; subnetzmaske?: string }) => void;
   setzeRouting: (routerId: string, routing: NonNullable<Geraet['routing']>) => void;
+  setzeNat: (routerId: string, aussenLeitungId: string | null) => void;
   setzeLeitungAusgefallen: (leitungId: string, ausgefallen: boolean) => void;
   setzeLeitung: (leitungId: string, aenderung: { verlust?: number; verzoegerung?: number }) => void;
   /** Verschieben während des Ziehens: ohne Verlaufseintrag. Vorher `merkeZustand()` aufrufen. */
@@ -137,6 +138,13 @@ export const useApp = create<AppZustand>()((set, get) => ({
     }),
   setzeRouting: (routerId, routing) =>
     set((z) => mitVerlauf(z, geraetAendern(z.netz, routerId, { routing }))),
+  setzeNat: (routerId, aussenLeitungId) =>
+    set((z) =>
+      mitVerlauf(
+        z,
+        geraetAendern(z.netz, routerId, { nat: aussenLeitungId ? { aussenLeitungId } : undefined }),
+      ),
+    ),
   setzeLeitung: (leitungId, aenderung) =>
     set((z) => mitVerlauf(z, leitungAendern(z.netz, leitungId, aenderung))),
   setzeLeitungAusgefallen: (leitungId, ausgefallen) =>

@@ -1,11 +1,11 @@
 import { adresseVon, besitztIp, schnittstellenVon } from '../model/adressen';
-import type { Geraet, NetzDatei } from '../model/datei';
+import type { Dienst, Geraet, NetzDatei } from '../model/datei';
 import { dienstVon, hatDienst } from '../model/dienste';
 import { normalisiereDomain, normalisierePfad, zerlegeAdresse, type Adresse } from '../model/domain';
-import { gleichesNetz, ipZuZahl, netzBeschreibung, zahlZuIp } from '../model/ip';
-import { findeGeraet, leitungAendern, leitungenVon } from '../model/netz';
+import { gleichesNetz, ipZuZahl, istPrivat, netzBeschreibung, zahlZuIp } from '../model/ip';
+import { findeGeraet, geraetAendern, leitungAendern, leitungenVon } from '../model/netz';
 import { aktivesNetz, gleichGuteRouten, routeFuer, routenVon, type Route } from '../model/routing';
-import { istVerteilerImSegment, segment, weg } from '../model/topologie';
+import { istVerteilerImSegment, nachbarn, segment, weg } from '../model/topologie';
 import { Ereigniswarteschlange } from './ereignisse';
 import { erzeugeZufall } from './zufall';
 
@@ -43,7 +43,40 @@ export type PaketDaten =
   /** Teil einer in Pakete zerlegten Nachricht (paketorientierte Datenübertragung, TK 4). */
   | { art: 'teil'; sendungId: string; nr: number; anzahl: number; inhalt: string }
   /** Empfänger bestätigt einen Teil (wie TCP). */
-  | { art: 'bestaetigung'; sendungId: string; nr: number; anzahl: number };
+  | { art: 'bestaetigung'; sendungId: string; nr: number; anzahl: number }
+  /** DHCP: „Gibt es hier einen DHCP-Server?“ (Rundsendung) */
+  | { art: 'dhcp-discover'; clientId: string }
+  /** DHCP: Server bietet eine Adresse an */
+  | ({ art: 'dhcp-offer'; clientId: string } & DhcpAngebot)
+  /** DHCP: Client nimmt das Angebot an (Rundsendung, damit alle Server es erfahren) */
+  | { art: 'dhcp-request'; clientId: string; ip: string; serverIp: string }
+  /** DHCP: Server bestätigt – ab jetzt gilt die Adresse */
+  | ({ art: 'dhcp-ack'; clientId: string } & DhcpAngebot);
+
+export interface DhcpAngebot {
+  ip: string;
+  subnetzmaske: string;
+  gateway: string;
+  dnsServer: string;
+}
+
+/** Ziel-IP einer Rundsendung an alle Geräte im lokalen Rechnernetz. */
+export const RUNDSENDUNG = '255.255.255.255';
+
+export type DhcpZustand =
+  | { phase: 'suche' }
+  | { phase: 'anfrage'; angebot: DhcpAngebot; serverIp: string }
+  | { phase: 'fertig'; angebot: DhcpAngebot; serverIp: string }
+  | { phase: 'fehler' };
+
+export interface NatEintrag {
+  anfrageId: string;
+  innenIp: string;
+  aussenIp: string;
+  /** Anschauliche Portnummer der Übersetzung (die Simulation ordnet Antworten über die Anfrage zu). */
+  port: number;
+  zielIp: string;
+}
 
 export type PaketArt = PaketDaten['art'];
 
@@ -61,7 +94,14 @@ export type Paket = PaketDaten & {
   erwartetVon?: string;
 };
 
-const anfragen: PaketArt[] = ['nachricht', 'dns-anfrage', 'http-anfrage', 'teil'];
+const anfragen: PaketArt[] = [
+  'nachricht',
+  'dns-anfrage',
+  'http-anfrage',
+  'teil',
+  'dhcp-discover',
+  'dhcp-request',
+];
 export const istAnfrage = (p: Paket) => anfragen.includes(p.art);
 
 export interface Unterwegs {
@@ -83,7 +123,8 @@ export type SendeFehler =
   | { grund: 'leitung-ausgefallen' }
   | { grund: 'anderes-netz'; eigenesNetz: string }
   | { grund: 'gateway-falsch'; eigenesNetz: string; gateway: string }
-  | { grund: 'keine-route' };
+  | { grund: 'keine-route' }
+  | { grund: 'dhcp-fehlt' };
 
 export type VerwerfGrund =
   | 'kein-ziel'
@@ -92,7 +133,9 @@ export type VerwerfGrund =
   | 'ttl'
   | 'leitung-ausgefallen'
   /** Auf einer gestörten Leitung verloren gegangen (Zufall mit festem Startwert). */
-  | 'stoerung';
+  | 'stoerung'
+  /** Rundsendung erreicht ein Gerät, das nicht zuständig ist (z. B. kein DHCP-Server). */
+  | 'rundsendung-ignoriert';
 
 /** Einstellungen der Simulation (Klasse 11, Paketvermittlung). */
 export interface SimOptionen {
@@ -177,6 +220,11 @@ export type ProtokollEintrag = { nr: number; zeit: number; geraetId: string } & 
   | { art: 'zusammengesetzt'; sendungId: string; text: string; anzahl: number; inReihenfolge: boolean }
   | { art: 'erneut-gesendet'; sendungId: string; teilNr: number; versuch: number }
   | { art: 'aufgegeben'; sendungId: string; fehlende: number[] }
+  | { art: 'dhcp-start' }
+  | { art: 'dhcp-erhalten'; angebot: DhcpAngebot; serverIp: string }
+  | { art: 'dhcp-fehlgeschlagen' }
+  | { art: 'dhcp-voll' }
+  | { art: 'nat'; richtung: 'aus' | 'ein'; innenIp: string; aussenIp: string; port: number }
 );
 
 /** Logische Verbindung zwischen Client und Dienst (Dienste-Ansicht, TK 1). */
@@ -190,7 +238,8 @@ type Ereignis =
   | { typ: 'ankunft'; paket: Paket; geraetId: string; vonId: string; leitungId: string; hopIp: string }
   | { typ: 'zeitablauf'; geraetId: string; anfrageId: string }
   | { typ: 'teil-senden'; sendungId: string; nr: number }
-  | { typ: 'teil-zeitablauf'; sendungId: string; nr: number };
+  | { typ: 'teil-zeitablauf'; sendungId: string; nr: number }
+  | { typ: 'dhcp-zeitablauf'; geraetId: string };
 
 type OhneKopf<T> = T extends unknown ? Omit<T, 'nr' | 'zeit'> : never;
 
@@ -209,6 +258,10 @@ export class Simulation {
   #empfang = new Map<string, Empfangspuffer>();
   /** Zähler je Router für das abwechselnde Verteilen auf gleich gute Wege. */
   #reihum = new Map<string, number>();
+  #dhcp = new Map<string, DhcpZustand>();
+  /** Vergebene Adressen je DHCP-Server: clientId → IP */
+  #leases = new Map<string, Map<string, string>>();
+  #nat = new Map<string, NatEintrag[]>();
 
   constructor(netz: NetzDatei, optionen: Partial<SimOptionen> = {}) {
     this.#netz = netz;
@@ -224,6 +277,32 @@ export class Simulation {
   /** Optionen während des Laufs ändern (der Zufall läuft mit seinem Startwert weiter). */
   setzeOptionen(optionen: Partial<Omit<SimOptionen, 'startwert'>>): void {
     this.#optionen = { ...this.#optionen, ...optionen };
+  }
+
+  dhcpZustand(geraetId: string): DhcpZustand | undefined {
+    return this.#dhcp.get(geraetId);
+  }
+
+  natTabelle(routerId: string): readonly NatEintrag[] {
+    return this.#nat.get(routerId) ?? [];
+  }
+
+  /**
+   * Endgerät fragt per DHCP nach einer Adresse: Discover (Rundsendung) → Offer → Request (Rundsendung) → Ack.
+   */
+  dhcpAnfordern(geraetId: string): void {
+    const g = this.#geraet(geraetId);
+    const leitung = leitungenVon(this.#aktiv, g.id)[0];
+    this.#protokolliere({ art: 'dhcp-start', geraetId });
+    this.#warteschlange.entfernen((e) => e.typ === 'dhcp-zeitablauf' && e.geraetId === geraetId);
+    if (!leitung) {
+      this.#dhcp.set(geraetId, { phase: 'fehler' });
+      this.#protokolliere({ art: 'dhcp-fehlgeschlagen', geraetId });
+      return;
+    }
+    this.#dhcp.set(geraetId, { phase: 'suche' });
+    this.#rundsenden(g, leitung.id, { art: 'dhcp-discover', clientId: g.id }, '0.0.0.0');
+    this.#warteschlange.planen(zeitlimit(this.#netz), { typ: 'dhcp-zeitablauf', geraetId });
   }
 
   /** Empfangspuffer eines Geräts (zerlegte Nachrichten, die dort ankommen). */
@@ -389,6 +468,10 @@ export class Simulation {
     for (const daten of jetzt) {
       if (daten.typ === 'zeitablauf') this.#zeitAbgelaufen(daten.geraetId, daten.anfrageId);
       if (daten.typ === 'teil-zeitablauf') this.#teilZeitAbgelaufen(daten.sendungId, daten.nr);
+      if (daten.typ === 'dhcp-zeitablauf' && this.#dhcp.get(daten.geraetId)?.phase !== 'fertig') {
+        this.#dhcp.set(daten.geraetId, { phase: 'fehler' });
+        this.#protokolliere({ art: 'dhcp-fehlgeschlagen', geraetId: daten.geraetId });
+      }
     }
   }
 
@@ -435,7 +518,7 @@ export class Simulation {
    */
   #pruefeSenden(von: Geraet, zielIpText: string): SendeFehler | { hopIp: string } {
     const eigene = adresseVon(von);
-    if (!eigene) return { grund: 'keine-ip' };
+    if (!eigene) return von.dhcp ? { grund: 'dhcp-fehlt' } : { grund: 'keine-ip' };
     const ziel = ipZuZahl(zielIpText);
     if (ziel === null) return { grund: 'ziel-ungueltig' };
     if (ziel === eigene.ip) return { grund: 'eigene-ip' };
@@ -481,11 +564,44 @@ export class Simulation {
     this.#aufLeitung(
       router.id,
       route.leitungId,
-      paket,
+      this.#natAusgehend(router, paket, route.leitungId),
       'weitergeleitet',
       zahlZuIp(route.gateway ?? ziel),
       route,
     );
+  }
+
+  /** Rundsendung über eine bestimmte Leitung (DHCP): geht an alle Geräte im lokalen Rechnernetz. */
+  #rundsenden(von: Geraet, leitungId: string, daten: PaketDaten, quelleIp: string, bezug?: Paket) {
+    const paket = this.#neuesPaket(von, RUNDSENDUNG, daten, bezug, quelleIp);
+    this.#aufLeitung(von.id, leitungId, paket, 'gesendet', RUNDSENDUNG);
+  }
+
+  /** NAT: Paket aus privatem Netz verlässt den Router über den Internet-Anschluss → Absender übersetzen. */
+  #natAusgehend(router: Geraet, paket: Paket, leitungId: string): Paket {
+    if (!router.nat || router.nat.aussenLeitungId !== leitungId) return paket;
+    const quelle = ipZuZahl(paket.quelleIp);
+    if (quelle === null || !istPrivat(quelle)) return paket;
+    const aussen = schnittstellenVon(this.#netz, router).find((s) => s.leitungId === leitungId);
+    if (!aussen) return paket;
+    const tabelle = this.#nat.get(router.id) ?? [];
+    const eintrag: NatEintrag = {
+      anfrageId: paket.id,
+      innenIp: paket.quelleIp,
+      aussenIp: zahlZuIp(aussen.ip),
+      port: 50000 + tabelle.length + 1,
+      zielIp: paket.zielIp,
+    };
+    this.#nat.set(router.id, [...tabelle, eintrag]);
+    this.#protokolliere({
+      art: 'nat',
+      geraetId: router.id,
+      richtung: 'aus',
+      innenIp: eintrag.innenIp,
+      aussenIp: eintrag.aussenIp,
+      port: eintrag.port,
+    });
+    return { ...paket, quelleIp: eintrag.aussenIp };
   }
 
   /** Route wählen; mit „verschiedene Wege“ reihum über alle gleich guten Wege. */
@@ -550,6 +666,16 @@ export class Simulation {
       return;
     }
 
+    if (istVerteilerImSegment(g) && hopIp === RUNDSENDUNG) {
+      // Rundsendung: an alle Anschlüsse außer dem, über den sie kam (Fluten).
+      for (const n of nachbarn(this.#aktiv, g.id)) {
+        if (n.leitung.id !== leitungId) {
+          this.#aufLeitung(g.id, n.leitung.id, { ...paket }, 'weitergeleitet', RUNDSENDUNG);
+        }
+      }
+      return;
+    }
+
     if (istVerteilerImSegment(g)) {
       // Switch/Access Point: zum nächstgelegenen Gerät mit der IP des nächsten Schritts weiterleiten.
       const ziel = this.#naechstesGeraetMitIp(g.id, hopIp);
@@ -562,6 +688,11 @@ export class Simulation {
       return;
     }
 
+    if (hopIp === RUNDSENDUNG) {
+      this.#rundsendungEmpfangen(g, paket, leitungId);
+      return;
+    }
+
     const hop = ipZuZahl(hopIp);
     if (hop === null || !besitztIp(this.#netz, g, hop)) {
       this.#protokolliere({ art: 'verworfen', geraetId, paket, grund: 'falsche-ip' });
@@ -569,6 +700,23 @@ export class Simulation {
     }
 
     const ziel = ipZuZahl(paket.zielIp)!;
+    // NAT: Antwort an die öffentliche Adresse → über die NAT-Tabelle zurück an das Gerät im Heimnetz.
+    if (g.typ === 'router' && g.nat && besitztIp(this.#netz, g, ziel) && paket.bezug) {
+      const eintrag = this.#nat.get(g.id)?.find((e) => e.anfrageId === paket.bezug);
+      if (eintrag) {
+        this.#protokolliere({
+          art: 'nat',
+          geraetId: g.id,
+          richtung: 'ein',
+          innenIp: eintrag.innenIp,
+          aussenIp: eintrag.aussenIp,
+          port: eintrag.port,
+        });
+        // TTL wie bei normaler Weiterleitung nur einmal verringern
+        this.#routerLeitetWeiter(g, { ...paket, zielIp: eintrag.innenIp });
+        return;
+      }
+    }
     if (!besitztIp(this.#netz, g, ziel)) {
       if (g.typ === 'router') this.#routerLeitetWeiter(g, paket);
       else this.#protokolliere({ art: 'verworfen', geraetId, paket, grund: 'falsche-ip' });
@@ -603,6 +751,129 @@ export class Simulation {
         return;
       case 'antwort':
         return;
+    }
+  }
+
+  // --- DHCP ---------------------------------------------------------------------------------------
+
+  #rundsendungEmpfangen(g: Geraet, paket: Paket, leitungId: string) {
+    const server = dienstVon(g, 'dhcp-server');
+    if (server && (paket.art === 'dhcp-discover' || paket.art === 'dhcp-request')) {
+      this.#protokolliere({ art: 'empfangen', geraetId: g.id, paket });
+      if (paket.art === 'dhcp-discover') this.#dhcpAnbieten(g, server, paket, leitungId);
+      else this.#dhcpBestaetigen(g, server, paket, leitungId);
+      return;
+    }
+    if ((paket.art === 'dhcp-offer' || paket.art === 'dhcp-ack') && paket.clientId === g.id) {
+      this.#protokolliere({ art: 'empfangen', geraetId: g.id, paket });
+      this.#dhcpAntwortAmClient(g, paket);
+      return;
+    }
+    this.#protokolliere({ art: 'verworfen', geraetId: g.id, paket, grund: 'rundsendung-ignoriert' });
+  }
+
+  /** Eigene Adresse des DHCP-Servers an der Leitung, über die die Rundsendung kam. */
+  #serverIp(server: Geraet, leitungId: string): string | null {
+    const s = schnittstellenVon(this.#netz, server).find(
+      (x) => server.typ !== 'router' || x.leitungId === leitungId,
+    );
+    return s ? zahlZuIp(s.ip) : null;
+  }
+
+  #dhcpAnbieten(
+    server: Geraet,
+    dienst: Extract<Dienst, { art: 'dhcp-server' }>,
+    p: Extract<Paket, { art: 'dhcp-discover' }>,
+    leitungId: string,
+  ) {
+    const eigeneIp = this.#serverIp(server, leitungId);
+    const von = ipZuZahl(dienst.von);
+    const bis = ipZuZahl(dienst.bis);
+    if (!eigeneIp || von === null || bis === null) return;
+    const leases = this.#leases.get(server.id) ?? new Map<string, string>();
+    this.#leases.set(server.id, leases);
+    let ip = leases.get(p.clientId) ?? null;
+    if (!ip) {
+      const belegt = new Set([
+        ...this.#netz.geraete.flatMap((x) => schnittstellenVon(this.#netz, x)).map((x) => x.ip),
+        ...[...leases.values()].map((x) => ipZuZahl(x)!),
+      ]);
+      for (let k = von; k <= bis; k++) {
+        if (!belegt.has(k)) {
+          ip = zahlZuIp(k);
+          break;
+        }
+      }
+    }
+    if (!ip) {
+      this.#protokolliere({ art: 'dhcp-voll', geraetId: server.id });
+      return;
+    }
+    leases.set(p.clientId, ip);
+    const angebot: DhcpAngebot = {
+      ip,
+      subnetzmaske: dienst.subnetzmaske,
+      gateway: dienst.gateway,
+      dnsServer: dienst.dnsServer,
+    };
+    this.#rundsenden(server, leitungId, { art: 'dhcp-offer', clientId: p.clientId, ...angebot }, eigeneIp, p);
+  }
+
+  #dhcpBestaetigen(
+    server: Geraet,
+    dienst: Extract<Dienst, { art: 'dhcp-server' }>,
+    p: Extract<Paket, { art: 'dhcp-request' }>,
+    leitungId: string,
+  ) {
+    const eigeneIp = this.#serverIp(server, leitungId);
+    // Angebot eines anderen Servers angenommen → dieser Server gibt seine reservierte Adresse wieder frei.
+    if (!eigeneIp || p.serverIp !== eigeneIp) {
+      this.#leases.get(server.id)?.delete(p.clientId);
+      return;
+    }
+    const angebot: DhcpAngebot = {
+      ip: p.ip,
+      subnetzmaske: dienst.subnetzmaske,
+      gateway: dienst.gateway,
+      dnsServer: dienst.dnsServer,
+    };
+    this.#rundsenden(server, leitungId, { art: 'dhcp-ack', clientId: p.clientId, ...angebot }, eigeneIp, p);
+  }
+
+  #dhcpAntwortAmClient(client: Geraet, p: Extract<Paket, { art: 'dhcp-offer' | 'dhcp-ack' }>) {
+    const zustand = this.#dhcp.get(client.id);
+    const angebot: DhcpAngebot = {
+      ip: p.ip,
+      subnetzmaske: p.subnetzmaske,
+      gateway: p.gateway,
+      dnsServer: p.dnsServer,
+    };
+    const leitung = leitungenVon(this.#aktiv, client.id)[0];
+    if (p.art === 'dhcp-offer' && zustand?.phase === 'suche' && leitung) {
+      // Erstes Angebot annehmen
+      this.#dhcp.set(client.id, { phase: 'anfrage', angebot, serverIp: p.quelleIp });
+      this.#rundsenden(
+        client,
+        leitung.id,
+        { art: 'dhcp-request', clientId: client.id, ip: p.ip, serverIp: p.quelleIp },
+        '0.0.0.0',
+        p,
+      );
+      return;
+    }
+    if (p.art === 'dhcp-ack' && zustand?.phase === 'anfrage') {
+      this.#warteschlange.entfernen((e) => e.typ === 'dhcp-zeitablauf' && e.geraetId === client.id);
+      this.#dhcp.set(client.id, { phase: 'fertig', angebot, serverIp: p.quelleIp });
+      // Ab jetzt gilt die Adresse – nur in dieser Simulation, nicht in der gespeicherten Datei.
+      this.#netz = geraetAendern(this.#netz, client.id, {
+        ip: angebot.ip,
+        subnetzmaske: angebot.subnetzmaske,
+        gateway: angebot.gateway,
+        dnsServer: angebot.dnsServer,
+        dhcp: false,
+      });
+      this.#aktiv = aktivesNetz(this.#netz);
+      this.#protokolliere({ art: 'dhcp-erhalten', geraetId: client.id, angebot, serverIp: p.quelleIp });
     }
   }
 

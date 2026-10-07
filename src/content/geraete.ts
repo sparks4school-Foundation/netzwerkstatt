@@ -50,4 +50,11 @@ export const dienstTexte: Record<
     beschreibung: 'Beantwortet die Frage „Welche IP-Adresse gehört zu dieser Domain?“ anhand seiner Tabelle.',
     glossar: 'dns',
   },
+  'dhcp-server': {
+    name: 'DHCP-Server',
+    rolle: 'Server-Dienst',
+    beschreibung:
+      'Vergibt IP-Adressen automatisch an Geräte, die danach fragen (z. B. im Heimnetz der Router).',
+    glossar: 'adressierung',
+  },
 };

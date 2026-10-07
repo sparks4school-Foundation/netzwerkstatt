@@ -115,4 +115,20 @@ describe('Beispielnetze', () => {
     expect(puffer!.text).toBe('Netzwerkstatt');
     expect(puffer!.ankunft).not.toEqual([1, 2, 3, 4, 5, 6, 7]);
   });
+
+  it('Heimnetze und Internet: DHCP, dann Website über NAT', () => {
+    const netz = lade('heimnetze-internet');
+    expect(adressProbleme(netz).size).toBe(0);
+    const sim = new Simulation(netz);
+    sim.dhcpAnfordern('g1');
+    bisZumEnde(sim);
+    expect(sim.dhcpZustand('g1')).toMatchObject({ phase: 'fertig', angebot: { ip: '192.168.178.100' } });
+    sim.aufrufen('g1', 'www.beispiel.test');
+    bisZumEnde(sim);
+    expect(sim.browser('g1')).toMatchObject({ phase: 'fertig', status: 200 });
+    sim.aufrufen('g8', 'www.beispiel.test');
+    bisZumEnde(sim);
+    expect(sim.browser('g8')).toMatchObject({ phase: 'fertig', status: 200 });
+    expect(sim.natTabelle('g5').length).toBeGreaterThan(0);
+  });
 });
