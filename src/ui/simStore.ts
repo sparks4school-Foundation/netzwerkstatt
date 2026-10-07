@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { NetzDatei } from '../model/datei';
-import { Simulation, type SendeFehler } from '../sim/simulation';
+import { STANDARD_OPTIONEN, Simulation, type SendeFehler, type SimOptionen } from '../sim/simulation';
 
 /** Tempostufen: Dauer eines Schritts in Millisekunden. Index 0 = Zeitlupe. */
 export const TEMPI = [
@@ -31,6 +31,7 @@ interface SimZustand {
   /** Protokolleintrag (gesendet/weitergeleitet), dessen Paket im Schichten-Inspektor gezeigt wird. */
   paketDetails: number | null;
   untenAnsicht: 'protokoll' | 'sequenz';
+  optionen: SimOptionen;
   zwischenstationen: boolean;
 
   starte: (netz: NetzDatei) => void;
@@ -43,6 +44,14 @@ interface SimZustand {
   setzeProtokollOffen: (offen: boolean) => void;
   oeffneBrowser: (geraetId: string | null) => void;
   zeigePaket: (eintragNr: number | null) => void;
+  setzeOptionen: (optionen: Partial<SimOptionen>) => void;
+  inPaketenSenden: (
+    vonId: string,
+    zielIp: string,
+    text: string,
+    zeichenProTeil: number,
+  ) => { ok: true } | ({ ok: false } & SendeFehler);
+  leitungAendern: (leitungId: string, aenderung: { verlust?: number; verzoegerung?: number }) => void;
   setzeUntenAnsicht: (ansicht: 'protokoll' | 'sequenz') => void;
   setzeZwischenstationen: (an: boolean) => void;
   aufrufen: (geraetId: string, eingabe: string) => void;
@@ -63,11 +72,12 @@ export const useSim = create<SimZustand>()((set, get) => ({
   browserGeraet: null,
   paketDetails: null,
   untenAnsicht: 'protokoll',
+  optionen: STANDARD_OPTIONEN,
   zwischenstationen: false,
 
   starte: (netz) =>
     set((z) => ({
-      sim: new Simulation(netz),
+      sim: new Simulation(netz, z.optionen),
       version: z.version + 1,
       laeuft: false,
       angehalten: false,
@@ -108,6 +118,28 @@ export const useSim = create<SimZustand>()((set, get) => ({
         : { paketDetails, laeuft: false, angehalten: z.sim?.aktiv ?? false },
     ),
   setzeUntenAnsicht: (untenAnsicht) => set({ untenAnsicht }),
+  setzeOptionen: (neu) => {
+    const optionen = { ...get().optionen, ...neu };
+    // Ein neuer Startwert bedeutet einen neuen (aber wieder wiederholbaren) Zufall → neu starten.
+    if (neu.startwert !== undefined && get().sim) {
+      set({ optionen });
+      get().starte(get().sim!.netz);
+      return;
+    }
+    get().sim?.setzeOptionen(neu);
+    set((z) => ({ optionen, version: z.version + 1 }));
+  },
+  inPaketenSenden: (vonId, zielIp, text, zeichenProTeil) => {
+    const { sim } = get();
+    if (!sim) throw new Error('Keine Simulation aktiv');
+    const ergebnis = sim.inPaketenSenden(vonId, zielIp, text, zeichenProTeil);
+    set((z) => ({ version: z.version + 1, laeuft: z.laeuft || (ergebnis.ok && !z.angehalten) }));
+    return ergebnis.ok ? { ok: true } : ergebnis;
+  },
+  leitungAendern: (leitungId, aenderung) => {
+    get().sim?.leitungAendern(leitungId, aenderung);
+    set((z) => ({ version: z.version + 1 }));
+  },
   setzeZwischenstationen: (zwischenstationen) => set({ zwischenstationen }),
   leitungAusfallen: (leitungId, ausgefallen) => {
     get().sim?.leitungAusfallen(leitungId, ausgefallen);

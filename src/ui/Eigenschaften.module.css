@@ -324,3 +324,49 @@
   height: 22px;
   accent-color: var(--farbe-fehler);
 }
+
+/* Empfangspuffer: ein Platz je Teil; fehlende Teile gestrichelt mit ✕ und Text. */
+.puffer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--abstand-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.puffer li {
+  display: flex;
+  flex-direction: column;
+  min-width: 64px;
+  padding: 2px 6px;
+  border: 2px solid var(--farbe-ok);
+  border-radius: 6px;
+  background: var(--farbe-hintergrund);
+}
+
+.puffer li[data-fehlt] {
+  border-style: dashed;
+  border-color: var(--farbe-fehler);
+}
+
+.pufferNr {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--farbe-text-leise);
+}
+
+.pufferInhalt {
+  font-family: var(--schrift-mono);
+  font-size: 0.8125rem;
+  white-space: pre;
+}
+
+.panel textarea {
+  padding: var(--abstand-2);
+  border: 1px solid var(--farbe-rand);
+  border-radius: 6px;
+  background: var(--farbe-hintergrund);
+  color: var(--farbe-text);
+  font: inherit;
+}

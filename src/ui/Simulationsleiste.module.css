@@ -64,3 +64,67 @@
   font-weight: 600;
   color: var(--farbe-text);
 }
+
+.optionen {
+  position: relative;
+}
+
+.optionen summary {
+  display: flex;
+  align-items: center;
+  min-height: var(--touch-min);
+  padding: 0 var(--abstand-3);
+  border: 1px solid var(--farbe-rand);
+  border-radius: 6px;
+  background: var(--farbe-flaeche);
+  cursor: pointer;
+}
+
+.optionenInhalt {
+  position: absolute;
+  bottom: calc(100% + var(--abstand-2));
+  right: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: var(--abstand-2);
+  width: 300px;
+  padding: var(--abstand-3);
+  border: 2px solid var(--farbe-text);
+  border-radius: var(--radius);
+  background: var(--farbe-hintergrund);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.2);
+}
+
+.optionenInhalt label {
+  display: flex;
+  gap: var(--abstand-2);
+  align-items: flex-start;
+  font-size: 0.875rem;
+}
+
+.optionenInhalt input {
+  width: 20px;
+  height: 20px;
+  flex: none;
+}
+
+/* Unter 1280 px: Knöpfe nur mit Symbol (Text bleibt für Screenreader), damit die Leiste einzeilig bleibt. */
+@media (max-width: 1280px) {
+  .langtext {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .tempo input {
+    width: 80px;
+  }
+
+  .tempoName {
+    min-width: 0;
+  }
+}

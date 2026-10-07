@@ -125,7 +125,13 @@ export function Arbeitsflaeche() {
       type: 'leitung',
       source: l.von,
       target: l.nach,
-      data: { art: l.art, gedimmt: dienstAnsicht, ausgefallen: !!l.ausgefallen },
+      data: {
+        art: l.art,
+        gedimmt: dienstAnsicht,
+        ausgefallen: !!l.ausgefallen,
+        verlust: l.verlust || undefined,
+        verzoegerung: l.verzoegerung && l.verzoegerung > 1 ? l.verzoegerung : undefined,
+      },
       selected: auswahl?.art === 'leitung' && auswahl.id === l.id,
       ariaLabel: `${l.ausgefallen ? `${texte.ausgefallen}: ` : ''}${l.art === 'wlan' ? 'WLAN' : 'Kabel'}: ${
         netz.geraete.find((g) => g.id === l.von)?.name

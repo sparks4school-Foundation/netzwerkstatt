@@ -102,6 +102,7 @@ const verwerfGrund: Record<VerwerfGrund, string> = {
   'keine-route': 'kein passender Eintrag in der Routingtabelle – das Paket wird verworfen',
   ttl: 'Lebensdauer (TTL) abgelaufen – das Paket ist zu oft weitergeleitet worden (Routing-Schleife?) und wird verworfen',
   'leitung-ausgefallen': 'die Leitung ist ausgefallen – das Paket geht verloren',
+  stoerung: 'ist auf der gestörten Leitung verloren gegangen',
 };
 
 /** Kurzname eines Pakets für die Animation auf der Leitung. */
@@ -121,6 +122,10 @@ export function paketKurzname(p: Paket): string {
       return 'HTTP-Antwort';
     case 'abgelehnt':
       return 'Abgelehnt';
+    case 'teil':
+      return `Teil ${p.nr}/${p.anzahl}`;
+    case 'bestaetigung':
+      return `Bestätigung ${p.nr}`;
   }
 }
 
@@ -145,6 +150,10 @@ export function paketInhalt(p: Paket): string {
         : `HTTP-Antwort „Seite ${p.pfad} gibt es nicht (404)“`;
     case 'abgelehnt':
       return `Ablehnung „Hier läuft kein ${p.dienst === 'webserver' ? 'Webserver' : 'DNS-Server'}“`;
+    case 'teil':
+      return `Teil ${p.nr}/${p.anzahl} „${p.inhalt}“`;
+    case 'bestaetigung':
+      return `Bestätigung „Teil ${p.nr} ist angekommen“`;
   }
 }
 
@@ -199,7 +208,9 @@ export function protokollText(e: ProtokollEintrag, name: (id: string) => string)
     case 'empfangen':
       return `${paketInhalt(e.paket)} von ${e.paket.quelleIp} empfangen`;
     case 'verworfen':
-      return `${paketKurzname(e.paket)} für ${e.paket.zielIp}: ${verwerfGrund[e.grund]}`;
+      return e.grund === 'stoerung' && e.vonId
+        ? `${paketKurzname(e.paket)} von ${name(e.vonId)} ${verwerfGrund.stoerung}`
+        : `${paketKurzname(e.paket)} für ${e.paket.zielIp}: ${verwerfGrund[e.grund]}`;
     case 'nicht-gesendet':
       return `Nicht gesendet: ${sendeFehlerText(e.fehler, name(e.geraetId), e.zielIp)}`;
     case 'ip-doppelt':
@@ -210,6 +221,18 @@ export function protokollText(e: ProtokollEintrag, name: (id: string) => string)
       return `Browser ruft „${e.eingabe}“ auf`;
     case 'browser-fehler':
       return `Browser zeigt Fehler: ${browserFehlerText(e.fehler, name(e.geraetId)).titel}`;
+    case 'zerlegt':
+      return `Nachricht für ${e.zielIp} in ${e.anzahl} Teile zerlegt`;
+    case 'einsortiert':
+      return `Teil ${e.teilNr}/${e.anzahl} als ${e.alsWievielter}. angekommen und an Platz ${e.teilNr} einsortiert`;
+    case 'teil-doppelt':
+      return `Teil ${e.teilNr} kam doppelt an – wird nur noch einmal bestätigt`;
+    case 'zusammengesetzt':
+      return `Alle ${e.anzahl} Teile da – Nachricht zusammengesetzt: „${e.text}“${e.inReihenfolge ? '' : ' (Teile kamen in anderer Reihenfolge an)'}`;
+    case 'erneut-gesendet':
+      return `Keine Bestätigung für Teil ${e.teilNr} – wird erneut gesendet (Versuch ${e.versuch})`;
+    case 'aufgegeben':
+      return `Aufgegeben: Teil ${e.fehlende.join(', ')} kam nach mehreren Versuchen nicht an`;
     case 'seite-angezeigt':
       return e.status === 200
         ? `Browser zeigt die Seite ${e.adresse.host}${e.adresse.pfad}`

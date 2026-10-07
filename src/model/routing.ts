@@ -149,3 +149,37 @@ export function routingEintragProbleme(netz: NetzDatei, router: Geraet): Routing
     return p;
   });
 }
+
+/**
+ * Alle gleich guten Wege zu einer Ziel-IP (Mehrwege-Routing, nur bei automatischer Tabelle).
+ * Kandidat ist jeder Nachbarrouter, der dem Ziel genau einen Router näher ist als dieser Router –
+ * dadurch können keine Schleifen entstehen. Grundlage für „Pakete nehmen verschiedene Wege“ (TK 4).
+ */
+export function gleichGuteRouten(netzGesamt: NetzDatei, routerId: string, zielIp: number): Route[] {
+  const router = findeGeraet(netzGesamt, routerId);
+  const beste = routeFuer(routenVon(netzGesamt, routerId), zielIp);
+  if (!router || !beste || beste.gateway === null || router.routing?.modus === 'manuell') {
+    return beste ? [beste] : [];
+  }
+  const netz = aktivesNetz(netzGesamt);
+  const alle = routerSchnittstellen(netz);
+  const kandidaten: Route[] = [];
+  for (const s of alle.filter((x) => x.geraetId === routerId)) {
+    for (const n of alle) {
+      if (n.geraetId === routerId || n.segment !== s.segment) continue;
+      if (netzanteil(n.ip, s.maske) !== netzanteil(s.ip, s.maske)) continue;
+      const vonDort = routeFuer(automatischeRouten(netzGesamt, n.geraetId), zielIp);
+      if (vonDort && vonDort.metrik + 1 === beste.metrik) {
+        kandidaten.push({ ...beste, gateway: n.ip, leitungId: s.leitungId });
+      }
+    }
+  }
+  // Doppelte (gleicher Nachbar über mehrere Anschlüsse) entfernen, Reihenfolge stabil halten.
+  const gesehen = new Set<string>();
+  return kandidaten.filter((r) => {
+    const k = `${r.gateway}/${r.leitungId}`;
+    if (gesehen.has(k)) return false;
+    gesehen.add(k);
+    return true;
+  });
+}

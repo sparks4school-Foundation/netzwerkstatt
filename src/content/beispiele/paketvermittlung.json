@@ -1,0 +1,78 @@
+{
+  "format": "netzwerkstatt",
+  "version": 1,
+  "stufe": "11",
+  "titel": "Paketvermittlung: Teile auf verschiedenen Wegen",
+  "geraete": [
+    {
+      "id": "g1",
+      "typ": "computer",
+      "name": "Sender",
+      "position": { "x": 0, "y": 200 },
+      "ip": "192.168.1.10",
+      "subnetzmaske": "255.255.255.0",
+      "gateway": "192.168.1.1",
+      "dienste": [{ "art": "browser" }]
+    },
+    {
+      "id": "g2",
+      "typ": "router",
+      "name": "Router 1",
+      "position": { "x": 240, "y": 200 },
+      "anschluesse": {
+        "l1": { "ip": "192.168.1.1", "subnetzmaske": "255.255.255.0" },
+        "l2": { "ip": "10.0.12.1", "subnetzmaske": "255.255.255.0" },
+        "l3": { "ip": "10.0.13.1", "subnetzmaske": "255.255.255.0" }
+      }
+    },
+    {
+      "id": "g3",
+      "typ": "router",
+      "name": "Router 2",
+      "position": { "x": 520, "y": 40 },
+      "anschluesse": {
+        "l2": { "ip": "10.0.12.2", "subnetzmaske": "255.255.255.0" },
+        "l4": { "ip": "10.0.24.2", "subnetzmaske": "255.255.255.0" }
+      }
+    },
+    {
+      "id": "g4",
+      "typ": "router",
+      "name": "Router 3",
+      "position": { "x": 520, "y": 380 },
+      "anschluesse": {
+        "l3": { "ip": "10.0.13.3", "subnetzmaske": "255.255.255.0" },
+        "l5": { "ip": "10.0.34.3", "subnetzmaske": "255.255.255.0" }
+      }
+    },
+    {
+      "id": "g5",
+      "typ": "router",
+      "name": "Router 4",
+      "position": { "x": 800, "y": 200 },
+      "anschluesse": {
+        "l4": { "ip": "10.0.24.4", "subnetzmaske": "255.255.255.0" },
+        "l5": { "ip": "10.0.34.4", "subnetzmaske": "255.255.255.0" },
+        "l6": { "ip": "192.168.2.1", "subnetzmaske": "255.255.255.0" }
+      }
+    },
+    {
+      "id": "g6",
+      "typ": "computer",
+      "name": "Empfänger",
+      "position": { "x": 1040, "y": 200 },
+      "ip": "192.168.2.10",
+      "subnetzmaske": "255.255.255.0",
+      "gateway": "192.168.2.1",
+      "dienste": [{ "art": "browser" }]
+    }
+  ],
+  "leitungen": [
+    { "id": "l1", "art": "kabel", "von": "g1", "nach": "g2" },
+    { "id": "l2", "art": "kabel", "von": "g2", "nach": "g3" },
+    { "id": "l3", "art": "kabel", "von": "g2", "nach": "g4", "verzoegerung": 3 },
+    { "id": "l4", "art": "kabel", "von": "g3", "nach": "g5" },
+    { "id": "l5", "art": "kabel", "von": "g4", "nach": "g5" },
+    { "id": "l6", "art": "kabel", "von": "g5", "nach": "g6" }
+  ]
+}
