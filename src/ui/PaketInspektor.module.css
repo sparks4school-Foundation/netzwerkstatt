@@ -1,0 +1,122 @@
+.dialog {
+  width: min(560px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  padding: var(--abstand-4);
+  border: 2px solid var(--farbe-text);
+  border-radius: 12px;
+  background: var(--farbe-hintergrund);
+  color: var(--farbe-text);
+}
+
+.dialog::backdrop {
+  background: rgb(0 0 0 / 0.35);
+}
+
+.kopf {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--abstand-2);
+}
+
+.kopf h2 {
+  margin: 0;
+  font-size: 1.0625rem;
+}
+
+.schliessen {
+  border: 0;
+  background: none;
+  color: var(--farbe-text);
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.hinweis {
+  margin: var(--abstand-2) 0 var(--abstand-3);
+  color: var(--farbe-text-leise);
+  font-size: 0.875rem;
+}
+
+/* Verschachtelte Kästen: jede Schicht umschließt die darüberliegende (Kapselung).
+   Unterscheidung über Einrückung, Rahmenstil und Nummer – nicht nur über Farbe. */
+.schicht {
+  margin-top: var(--abstand-2);
+  padding: var(--abstand-2) var(--abstand-3);
+  border: 2px solid var(--farbe-rand);
+  border-radius: var(--radius);
+  background: var(--farbe-hintergrund);
+}
+
+.schicht[data-stufe='1'] {
+  margin-top: 0;
+  border-color: var(--farbe-text);
+  background: var(--farbe-flaeche);
+}
+
+.schicht[data-stufe='2'] {
+  border-style: dashed;
+}
+
+.schicht[data-stufe='3'] {
+  border-style: dotted;
+  border-width: 3px;
+  background: var(--farbe-flaeche);
+}
+
+.schicht[data-stufe='4'] {
+  border-color: var(--farbe-akzent);
+  border-width: 3px;
+}
+
+.schicht summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--abstand-2);
+  min-height: 40px;
+  cursor: pointer;
+}
+
+.schichtName {
+  font-weight: 700;
+}
+
+.protokoll {
+  padding: 0 var(--abstand-2);
+  border: 1px solid var(--farbe-rand);
+  border-radius: 999px;
+  font-family: var(--schrift-mono);
+  font-size: 0.8125rem;
+}
+
+.aufgabe {
+  margin: 0 0 var(--abstand-1);
+  font-size: 0.8125rem;
+  font-style: italic;
+  color: var(--farbe-text-leise);
+}
+
+.felder {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+}
+
+.felder > div {
+  display: grid;
+  grid-template-columns: 7.5em 1fr;
+  gap: var(--abstand-2);
+}
+
+.felder dt {
+  font-size: 0.8125rem;
+  color: var(--farbe-text-leise);
+}
+
+.felder dd {
+  margin: 0;
+  font-family: var(--schrift-mono);
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
+}

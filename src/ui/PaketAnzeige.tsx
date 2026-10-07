@@ -1,5 +1,6 @@
 import { useReactFlow, ViewportPortal } from '@xyflow/react';
 import { paketKurzname } from '../content/meldungen';
+import { texte } from '../content/texte';
 import { istAnfrage } from '../sim/simulation';
 import { useSim } from './simStore';
 import styles from './PaketAnzeige.module.css';
@@ -34,18 +35,31 @@ export function PaketAnzeige() {
         if (!a || !b) return null;
         const antwort = !istAnfrage(u.paket);
         return (
-          <div
+          <button
+            type="button"
             key={`${u.paket.id}-${u.start}`}
-            className={styles.paket}
+            // nopan/nodrag: Klick öffnet Details, statt die Ansicht zu verschieben
+            className={`${styles.paket} nopan nodrag`}
             data-art={antwort ? 'antwort' : 'anfrage'}
             style={{
               transform: `translate(${a.x + (b.x - a.x) * p}px, ${a.y + (b.y - a.y) * p}px) translate(-50%, -50%)`,
             }}
-            aria-hidden="true"
+            aria-label={texte.paketDetailsZu(paketKurzname(u.paket))}
+            onClick={() => {
+              const e = sim.protokoll.findLast(
+                (x) =>
+                  (x.art === 'gesendet' || x.art === 'weitergeleitet') &&
+                  x.paket.id === u.paket.id &&
+                  x.geraetId === u.vonId,
+              );
+              if (e) useSim.getState().zeigePaket(e.nr);
+            }}
           >
-            <span className={styles.symbol}>{antwort ? '↩' : '✉'}</span>
+            <span className={styles.symbol} aria-hidden="true">
+              {antwort ? '↩' : '✉'}
+            </span>
             {paketKurzname(u.paket)}
-          </div>
+          </button>
         );
       })}
     </ViewportPortal>

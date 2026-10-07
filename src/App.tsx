@@ -8,6 +8,7 @@ import { Bausteine } from './ui/Bausteine';
 import { Eigenschaften } from './ui/Eigenschaften';
 import { Kopfleiste } from './ui/Kopfleiste';
 import { Meldung } from './ui/Meldung';
+import { PaketInspektor } from './ui/PaketInspektor';
 import { Protokoll } from './ui/Protokoll';
 import { useApp } from './ui/store';
 import { UpdateHinweis } from './ui/UpdateHinweis';
@@ -34,6 +35,7 @@ export function App() {
         {!bearbeitbar && <Protokoll />}
         <Meldung />
         <BeispieleDialog />
+        <PaketInspektor />
         <UpdateHinweis />
       </div>
     </ReactFlowProvider>

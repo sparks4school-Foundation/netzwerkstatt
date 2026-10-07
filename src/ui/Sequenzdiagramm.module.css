@@ -1,0 +1,53 @@
+.rahmen {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.leiste {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--abstand-2);
+  padding: 0 var(--abstand-4) var(--abstand-2);
+}
+
+.leiste button {
+  padding: 0 var(--abstand-3);
+  border: 1px solid var(--farbe-rand);
+  border-radius: 6px;
+  background: var(--farbe-flaeche);
+  color: var(--farbe-text);
+  cursor: pointer;
+}
+
+.ankreuzen {
+  display: flex;
+  align-items: center;
+  gap: var(--abstand-2);
+  min-height: var(--touch-min);
+  font-size: 0.875rem;
+}
+
+.ankreuzen input {
+  width: 20px;
+  height: 20px;
+}
+
+.flaeche {
+  overflow: auto;
+  padding: 0 var(--abstand-4) var(--abstand-3);
+}
+
+.flaeche svg {
+  display: block;
+  border: 1px solid var(--farbe-rand);
+  border-radius: 6px;
+}
+
+.leer {
+  margin: 0;
+  padding: 0 var(--abstand-4) var(--abstand-3);
+  color: var(--farbe-text-leise);
+}

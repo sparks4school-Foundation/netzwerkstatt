@@ -28,6 +28,10 @@ interface SimZustand {
   protokollOffen: boolean;
   /** Gerät, dessen Browser-Fenster offen ist. */
   browserGeraet: string | null;
+  /** Protokolleintrag (gesendet/weitergeleitet), dessen Paket im Schichten-Inspektor gezeigt wird. */
+  paketDetails: number | null;
+  untenAnsicht: 'protokoll' | 'sequenz';
+  zwischenstationen: boolean;
 
   starte: (netz: NetzDatei) => void;
   beende: () => void;
@@ -38,6 +42,9 @@ interface SimZustand {
   setzeTempo: (tempo: number) => void;
   setzeProtokollOffen: (offen: boolean) => void;
   oeffneBrowser: (geraetId: string | null) => void;
+  zeigePaket: (eintragNr: number | null) => void;
+  setzeUntenAnsicht: (ansicht: 'protokoll' | 'sequenz') => void;
+  setzeZwischenstationen: (an: boolean) => void;
   aufrufen: (geraetId: string, eingabe: string) => void;
   leitungAusfallen: (leitungId: string, ausgefallen: boolean) => void;
   /** Von der Animationsschleife aufgerufen: `ms` Millisekunden sind vergangen. */
@@ -54,6 +61,9 @@ export const useSim = create<SimZustand>()((set, get) => ({
   fortschritt: 0,
   protokollOffen: true,
   browserGeraet: null,
+  paketDetails: null,
+  untenAnsicht: 'protokoll',
+  zwischenstationen: false,
 
   starte: (netz) =>
     set((z) => ({
@@ -64,7 +74,15 @@ export const useSim = create<SimZustand>()((set, get) => ({
       einzelschritt: false,
       fortschritt: 0,
     })),
-  beende: () => set({ sim: null, laeuft: false, einzelschritt: false, fortschritt: 0, browserGeraet: null }),
+  beende: () =>
+    set({
+      sim: null,
+      laeuft: false,
+      einzelschritt: false,
+      fortschritt: 0,
+      browserGeraet: null,
+      paketDetails: null,
+    }),
 
   senden: (vonId, zielIp, text) => {
     const { sim } = get();
@@ -82,6 +100,15 @@ export const useSim = create<SimZustand>()((set, get) => ({
   setzeTempo: (tempo) => set({ tempo }),
   setzeProtokollOffen: (protokollOffen) => set({ protokollOffen }),
   oeffneBrowser: (browserGeraet) => set({ browserGeraet }),
+  // Beim Öffnen anhalten, damit man in Ruhe nachsehen kann.
+  zeigePaket: (paketDetails) =>
+    set((z) =>
+      paketDetails === null
+        ? { paketDetails }
+        : { paketDetails, laeuft: false, angehalten: z.sim?.aktiv ?? false },
+    ),
+  setzeUntenAnsicht: (untenAnsicht) => set({ untenAnsicht }),
+  setzeZwischenstationen: (zwischenstationen) => set({ zwischenstationen }),
   leitungAusfallen: (leitungId, ausgefallen) => {
     get().sim?.leitungAusfallen(leitungId, ausgefallen);
     set((z) => ({ version: z.version + 1 }));

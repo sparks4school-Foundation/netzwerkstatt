@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { texte } from '../content/texte';
 import styles from './UpdateHinweis.module.css';
@@ -9,6 +10,13 @@ export function UpdateHinweis() {
     needRefresh: [updateDa, setzeUpdateDa],
     updateServiceWorker,
   } = useRegisterSW();
+
+  // „Offline bereit“ ist nur eine Info und verschwindet von selbst; „Neue Version“ bleibt, bis man reagiert.
+  useEffect(() => {
+    if (!offlineBereit || updateDa) return;
+    const t = setTimeout(() => setzeOfflineBereit(false), 5000);
+    return () => clearTimeout(t);
+  }, [offlineBereit, updateDa, setzeOfflineBereit]);
 
   if (!offlineBereit && !updateDa) return null;
 
