@@ -105,8 +105,15 @@ export type BrowserZustand =
   | { phase: 'fehler'; eingabe: string; adresse?: Adresse; fehler: BrowserFehler };
 
 export type ProtokollEintrag = { nr: number; zeit: number; geraetId: string } & (
-  | { art: 'gesendet'; nachId: string; paket: Paket }
-  | { art: 'weitergeleitet'; nachId: string; paket: Paket; route?: GenutzteRoute }
+  | { art: 'gesendet'; nachId: string; leitungId: string; hopIp: string; paket: Paket; route?: GenutzteRoute }
+  | {
+      art: 'weitergeleitet';
+      nachId: string;
+      leitungId: string;
+      hopIp: string;
+      paket: Paket;
+      route?: GenutzteRoute;
+    }
   | { art: 'empfangen'; paket: Paket }
   | { art: 'verworfen'; paket: Paket; grund: VerwerfGrund }
   | { art: 'nicht-gesendet'; zielIp: string; fehler: SendeFehler }
@@ -354,7 +361,15 @@ export class Simulation {
       subnetzmaske: zahlZuIp(route.maske),
       gateway: route.gateway === null ? null : zahlZuIp(route.gateway),
     };
-    this.#protokolliere({ art, geraetId: vonId, nachId, paket, ...(genutzt ? { route: genutzt } : {}) });
+    this.#protokolliere({
+      art,
+      geraetId: vonId,
+      nachId,
+      leitungId,
+      hopIp,
+      paket,
+      ...(genutzt ? { route: genutzt } : {}),
+    });
   }
 
   // --- Empfangen ----------------------------------------------------------------------------------

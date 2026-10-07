@@ -1,15 +1,34 @@
 .protokoll {
   display: flex;
   flex-direction: column;
-  max-height: 32dvh;
+  max-height: 40dvh;
   border-top: 2px solid var(--farbe-rand);
   background: var(--farbe-hintergrund);
 }
 
+.kopf {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--abstand-2);
+  padding: var(--abstand-1) var(--abstand-4);
+}
+
 .titel {
   margin: 0;
-  padding: var(--abstand-2) var(--abstand-4);
   font-size: 0.9375rem;
+}
+
+.details {
+  min-height: 32px;
+  padding: 0 var(--abstand-2);
+  border: 1px solid var(--farbe-rand);
+  border-radius: 6px;
+  background: var(--farbe-flaeche);
+  color: var(--farbe-text);
+  font-size: 0.8125rem;
+  cursor: pointer;
 }
 
 .leer {
