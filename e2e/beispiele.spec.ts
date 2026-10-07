@@ -9,7 +9,7 @@ test.beforeEach(async ({ page }) => {
 test('leere Arbeitsfläche bietet Beispiele an', async ({ page }) => {
   await page.locator('main').getByRole('button', { name: 'Beispiele' }).click();
   await expect(page.getByRole('dialog', { name: 'Beispielnetze' })).toBeVisible();
-  await expect(page.getByRole('button', { name: /öffnen$/ })).toHaveCount(6);
+  await expect(page.getByRole('button', { name: /öffnen$/ })).toHaveCount(7);
 });
 
 test('Schulnetz öffnen, Arbeitsauftrag lesen und Website abrufen', async ({ page }) => {

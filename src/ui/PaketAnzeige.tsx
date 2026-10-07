@@ -25,7 +25,11 @@ export function PaketAnzeige() {
     };
   };
   // Bei reduzierter Bewegung steht das Paket ruhig in der Mitte der Leitung.
-  const p = bewegungReduziert ? 0.5 : easeInOut(fortschritt);
+  // Fortschritt je Paket: Lange Leitungen brauchen mehrere Schritte.
+  const anteil = (start: number, ende: number) =>
+    bewegungReduziert
+      ? 0.5
+      : easeInOut(Math.min(1, (sim.zeit - start + fortschritt) / Math.max(1, ende - start)));
 
   return (
     <ViewportPortal>
@@ -34,6 +38,7 @@ export function PaketAnzeige() {
         const b = mitte(u.nachId);
         if (!a || !b) return null;
         const antwort = !istAnfrage(u.paket);
+        const p = anteil(u.start, u.ende);
         return (
           <button
             type="button"

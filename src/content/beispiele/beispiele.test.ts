@@ -104,4 +104,15 @@ describe('Beispielnetze', () => {
     bisZumEnde(umweg);
     expect(router(umweg)).toEqual(['g3', 'g4', 'g5']);
   });
+
+  it('Paketvermittlung: Teile kommen über zwei Wege durcheinander an', () => {
+    const netz = lade('paketvermittlung');
+    expect(adressProbleme(netz).size).toBe(0);
+    const sim = new Simulation(netz, { mehrwege: true });
+    sim.inPaketenSenden('g1', '192.168.2.10', 'Netzwerkstatt', 2);
+    bisZumEnde(sim);
+    const [puffer] = sim.empfangspuffer('g6');
+    expect(puffer!.text).toBe('Netzwerkstatt');
+    expect(puffer!.ankunft).not.toEqual([1, 2, 3, 4, 5, 6, 7]);
+  });
 });

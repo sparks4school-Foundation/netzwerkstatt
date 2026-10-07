@@ -41,6 +41,11 @@ export class Ereigniswarteschlange<T> {
     this.#liste.splice(links, 0, ereignis);
   }
 
+  /** Stellt die Uhr vor (nie zurück) – für Schritte, in denen kein Ereignis ansteht. */
+  vorstellen(zeit: number): void {
+    if (zeit > this.#zeit) this.#zeit = zeit;
+  }
+
   /** Entfernt alle geplanten Ereignisse, auf die `bedingung` zutrifft (z. B. erledigte Zeitlimits). */
   entfernen(bedingung: (daten: T) => boolean): void {
     this.#liste = this.#liste.filter((e) => !bedingung(e.daten));

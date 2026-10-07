@@ -4,7 +4,15 @@ import { texte } from '../content/texte';
 import type { LeitungsArt } from '../model/datei';
 import styles from './LeitungKante.module.css';
 
-export type LeitungKanteDaten = { art: LeitungsArt; gedimmt?: boolean; ausgefallen?: boolean };
+export type LeitungKanteDaten = {
+  art: LeitungsArt;
+  gedimmt?: boolean;
+  ausgefallen?: boolean;
+  /** Paketverlust in Prozent (gestörte Leitung) */
+  verlust?: number;
+  /** Laufzeit in Schritten, wenn länger als normal */
+  verzoegerung?: number;
+};
 export type LeitungKanteTyp = Edge<LeitungKanteDaten, 'leitung'>;
 
 /**
@@ -36,6 +44,7 @@ export function LeitungKante({ id, source, target, data, selected }: EdgeProps<L
         data-ausgewaehlt={selected || undefined}
         data-gedimmt={data.gedimmt || undefined}
         data-ausgefallen={data.ausgefallen || undefined}
+        data-lang={data.verzoegerung ? true : undefined}
       />
       {data.ausgefallen && (
         <EdgeLabelRenderer>
@@ -47,6 +56,23 @@ export function LeitungKante({ id, source, target, data, selected }: EdgeProps<L
           >
             <span aria-hidden="true">✕ </span>
             {texte.ausgefallen}
+          </div>
+        </EdgeLabelRenderer>
+      )}
+      {!data.ausgefallen && (data.verlust || data.verzoegerung) && (
+        <EdgeLabelRenderer>
+          <div
+            className={styles.eigenschaft}
+            style={{
+              transform: `translate(-50%, -50%) translate(${(p.x + q.x) / 2}px, ${(p.y + q.y) / 2 + (wlan ? 20 : 0)}px)`,
+            }}
+          >
+            {[
+              data.verlust ? `⚡ ${texte.verlustEtikett(data.verlust)}` : null,
+              data.verzoegerung ? `⏱ ${texte.laufzeitEtikett(data.verzoegerung)}` : null,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
           </div>
         </EdgeLabelRenderer>
       )}

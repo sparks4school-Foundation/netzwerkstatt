@@ -4,7 +4,7 @@ Diese Datei ist die zentrale Projektbeschreibung für Menschen **und** KI-Agente
 Sie enthält Ziel, Anforderungen, Architekturentscheidungen, Konventionen und Roadmap.
 Bei Widersprüchen zwischen Code und dieser Datei: nachfragen, dann diese Datei aktualisieren.
 
-> Status: **Phase 0–4a gemergt (live), Phase 4b (Schichtenmodell, Sequenzdiagramm) umgesetzt** auf Branch `phase-4b-schichten` (Stand 2026-10-07). Nächster Schritt: Phase 4c (Pakete zerlegen, Verlust, Reihenfolge).
+> Status: **Phase 0–4b gemergt (live), Phase 4c (Paketvermittlung) umgesetzt** auf Branch `phase-4c-pakete` (Stand 2026-10-07). Nächster Schritt: Phase 4d (DHCP, vereinfachtes NAT).
 > Repository: https://github.com/sparks4school-Foundation/netzwerkstatt (öffentlich) · Live: https://sparks4school-foundation.github.io/netzwerkstatt/
 
 ## 0. Schnellstart für Agenten
@@ -284,7 +284,18 @@ So bleibt die Simulation testbar, und später sind andere Oberflächen (z. B. Dr
 - **Sequenzdiagramm** (`sim/sequenz.ts` + `ui/Sequenzdiagramm.tsx`, nur Klasse 11): Reiter neben dem Protokoll. Ende-zu-Ende (ein Pfeil je Paket) oder mit Zwischenstationen (ein Pfeil je Abschnitt). Anfragen durchgezogen, Antworten gestrichelt (UML), verlorene Pakete enden mit ✕. SVG mit festen, druckfreundlichen Farben; „Als Bild (SVG) speichern“; Textfassung für Screenreader.
 - **UX-Fix:** Der Hinweis „offline bereit“ blendet sich nach 5 s aus (verdeckte sonst Bedienelemente unten rechts).
 
-### 5.11 Aufgabenmodus
+### 5.11 Paketorientierte Datenübertragung (Phase 4c, Klasse 11 TK 4)
+
+- **Uhr:** `Simulation.schritt()` rückt immer genau **einen** Schritt vor (auch ohne Ereignis), damit lange Leitungen sichtbar Zeit brauchen. Die UI spult Schritte ohne Paket auf der Leitung schnell vor.
+- **Zerlegen:** `inPaketenSenden(von, zielIp, text, zeichenProTeil)` → Pakete `teil` (Nr./Anzahl/Inhalt), ein Teil pro Schritt. Empfänger sortiert in einen **Empfangspuffer** (`empfangspuffer(geraetId)`: Plätze, Ankunftsreihenfolge, zusammengesetzter Text) und protokolliert „als n. angekommen“ / „zusammengesetzt (Reihenfolge …)“.
+- **Bestätigen (Option `bestaetigen`, Standard an):** Empfänger schickt `bestaetigung` je Teil; Absender sendet unbestätigte Teile nach `zeitlimit(netz)` erneut (max. `MAX_WIEDERHOLUNGEN` = 5), danach „aufgegeben“. Ohne Option bleiben Verluste als Lücken („fehlt“) sichtbar.
+- **Verschiedene Wege (Option `mehrwege`):** Router verteilen reihum auf alle **gleich guten** Wege (`gleichGuteRouten`: Nachbar ist dem Ziel genau einen Router näher → keine Schleifen). Nur bei automatischer Routingtabelle.
+- **Leitungseigenschaften (Klasse 11):** `verlust` (0–100 %, Zufall über Seed-PRNG `startwert`; „Neu würfeln“ startet mit neuem Startwert, gleicher Startwert = gleicher Ablauf) und `verzoegerung` (1–3 Schritte). Darstellung: Etikett „⚡ 25 % Verlust · ⏱ 3 Schritte“, lange Leitungen doppelt so dick.
+- **Schichten:** Teile/Bestätigungen laufen über TCP mit Folgenummer bzw. Bestätigung in der Transportschicht.
+- **UI:** „In Paketen senden“ (Text, Zeichen pro Paket), Empfangspuffer im Panel des Empfängers (✓/✕ je Platz), Einstellungen (⚙) in der Simulationsleiste. Unter 1280 px zeigt die Leiste nur Symbole (Text bleibt für Screenreader).
+- **Beispiel:** „Paketvermittlung: Teile auf verschiedenen Wegen“ (Quadrat aus vier Routern, ein Weg mit langer Leitung).
+
+### 5.12 Aufgabenmodus
 
 - Lehrkraft baut ein Netz, schaltet „Aufgabe erstellen“ ein und legt fest: Arbeitsauftrag (Text), Hilfestufen (1–3, schrittweise aufdeckbar), welche Elemente gesperrt sind, optional eingebaute Fehler und automatische Prüfbedingungen (z. B. „Browser auf PC-1 lädt www.schule.test“).
 - Export als normale JSON-Datei → Verteilung über Moodle/Schulplattform/USB.
@@ -334,15 +345,15 @@ So bleibt die Simulation testbar, und später sind andere Oberflächen (z. B. Dr
 
 ## 7. Roadmap
 
-| Phase                    | Inhalt                                                                                                                                                                                                                        | Deckt ab                                    |
-| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
-| 0 – Grundgerüst ✅       | Repo, Vite/TS/React, Lint, Tests, CI, PWA-Hülle, Design-Tokens, Lizenz                                                                                                                                                        | Technik                                     |
-| 1 – Editor ✅            | Geräte platzieren/verbinden (Touch + Tastatur), Eigenschaften-Panel, Undo, Speichern/Laden JSON                                                                                                                               | 7/8 TK 2                                    |
-| 2 – Engine-Kern ✅       | Event-Queue, Switch, IP im lokalen Netz, „Nachricht senden“, Animation, Pause/Schritt, Protokoll, Erkennung doppelter IP                                                                                                      | 7/8 TK 3                                    |
-| 3 – Dienste (**MVP**) ✅ | Dienste installieren, Webserver mit HTML-Editor, Browser, DNS-Server, Namensauflösung Schritt für Schritt, Dienste-Ansicht                                                                                                    | 7/8 TK 1, 4, 5 → **erster Unterrichtstest** |
-| 4 – Stufe 11             | **4a ✅** Router, Routingtabellen, mehrere Netze, Leitungsausfall/Umweg, privat/öffentlich · **4b ✅** Schichtenansicht, Sequenzdiagramm · **4c** Pakete zerlegen/Verlust/Neuzusammensetzung · **4d** DHCP, vereinfachtes NAT | 11 TK 1–7                                   |
-| 5 – Unterricht           | Aufgabenmodus, Hilfestufen, Fehler einbauen, Blackbox/Whitebox, Druck/Export (Netzplan, Sequenzdiagramm), Glossar-Tooltips komplett                                                                                           | Querschnitt                                 |
-| 6 – Optional             | Verschlüsselung lesbar/nicht lesbar, Parität/Prüfsumme, MITM/Zertifikate, Kommunikationsformen, Filius-Import                                                                                                                 | Kann                                        |
+| Phase                    | Inhalt                                                                                                                                                                                                                           | Deckt ab                                    |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| 0 – Grundgerüst ✅       | Repo, Vite/TS/React, Lint, Tests, CI, PWA-Hülle, Design-Tokens, Lizenz                                                                                                                                                           | Technik                                     |
+| 1 – Editor ✅            | Geräte platzieren/verbinden (Touch + Tastatur), Eigenschaften-Panel, Undo, Speichern/Laden JSON                                                                                                                                  | 7/8 TK 2                                    |
+| 2 – Engine-Kern ✅       | Event-Queue, Switch, IP im lokalen Netz, „Nachricht senden“, Animation, Pause/Schritt, Protokoll, Erkennung doppelter IP                                                                                                         | 7/8 TK 3                                    |
+| 3 – Dienste (**MVP**) ✅ | Dienste installieren, Webserver mit HTML-Editor, Browser, DNS-Server, Namensauflösung Schritt für Schritt, Dienste-Ansicht                                                                                                       | 7/8 TK 1, 4, 5 → **erster Unterrichtstest** |
+| 4 – Stufe 11             | **4a ✅** Router, Routingtabellen, mehrere Netze, Leitungsausfall/Umweg, privat/öffentlich · **4b ✅** Schichtenansicht, Sequenzdiagramm · **4c ✅** Pakete zerlegen/Verlust/Neuzusammensetzung · **4d** DHCP, vereinfachtes NAT | 11 TK 1–7                                   |
+| 5 – Unterricht           | Aufgabenmodus, Hilfestufen, Fehler einbauen, Blackbox/Whitebox, Druck/Export (Netzplan, Sequenzdiagramm), Glossar-Tooltips komplett                                                                                              | Querschnitt                                 |
+| 6 – Optional             | Verschlüsselung lesbar/nicht lesbar, Parität/Prüfsumme, MITM/Zertifikate, Kommunikationsformen, Filius-Import                                                                                                                    | Kann                                        |
 
 ---
 

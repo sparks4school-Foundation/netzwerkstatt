@@ -74,10 +74,29 @@ function anwendung(p: Paket): Schichten['anwendung'] {
         protokoll: p.dienst === 'webserver' ? 'HTTP' : 'DNS',
         felder: [{ name: 'Fehler', wert: 'Dienst nicht erreichbar' }],
       };
+    case 'teil':
+      return { protokoll: 'Nachricht in Teilen', felder: [{ name: 'Inhalt', wert: `„${p.inhalt}“` }] };
+    case 'bestaetigung':
+      return { protokoll: 'Nachricht in Teilen', felder: [{ name: 'Inhalt', wert: '– (nur Bestätigung)' }] };
   }
 }
 
 function transport(p: Paket): Schichten['transport'] {
+  if (p.art === 'teil' || p.art === 'bestaetigung') {
+    // Paketorientierte Übertragung: Folgenummer bzw. Bestätigung stehen in der Transportschicht (wie TCP).
+    const port = clientPort(p.sendungId);
+    const anfrage = p.art === 'teil';
+    return {
+      protokoll: 'TCP',
+      felder: [
+        { name: 'Quellport', wert: String(anfrage ? port : 7000) },
+        { name: 'Zielport', wert: String(anfrage ? 7000 : port) },
+        anfrage
+          ? { name: 'Folgenummer', wert: `${p.nr} von ${p.anzahl}` }
+          : { name: 'Bestätigung', wert: `Teil ${p.nr} angekommen` },
+      ],
+    };
+  }
   const art =
     p.art === 'http-anfrage' ||
     p.art === 'http-antwort' ||

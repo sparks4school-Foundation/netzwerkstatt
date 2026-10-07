@@ -59,6 +59,7 @@ interface AppZustand {
   setzeAnschluss: (routerId: string, leitungId: string, werte: { ip: string; subnetzmaske?: string }) => void;
   setzeRouting: (routerId: string, routing: NonNullable<Geraet['routing']>) => void;
   setzeLeitungAusgefallen: (leitungId: string, ausgefallen: boolean) => void;
+  setzeLeitung: (leitungId: string, aenderung: { verlust?: number; verzoegerung?: number }) => void;
   /** Verschieben während des Ziehens: ohne Verlaufseintrag. Vorher `merkeZustand()` aufrufen. */
   verschieben: (id: string, position: { x: number; y: number }) => void;
   merkeZustand: () => void;
@@ -136,6 +137,8 @@ export const useApp = create<AppZustand>()((set, get) => ({
     }),
   setzeRouting: (routerId, routing) =>
     set((z) => mitVerlauf(z, geraetAendern(z.netz, routerId, { routing }))),
+  setzeLeitung: (leitungId, aenderung) =>
+    set((z) => mitVerlauf(z, leitungAendern(z.netz, leitungId, aenderung))),
   setzeLeitungAusgefallen: (leitungId, ausgefallen) =>
     set((z) => mitVerlauf(z, leitungAendern(z.netz, leitungId, { ausgefallen }))),
 

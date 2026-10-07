@@ -2,6 +2,7 @@ import type { StufeId } from '../../model/stufe';
 import erstesNetz from './erstes-netz.json';
 import fehlersucheWebseite from './fehlersuche-webseite.json';
 import heimnetzWlan from './heimnetz-wlan.json';
+import paketvermittlung from './paketvermittlung.json';
 import schulnetzWebDns from './schulnetz-web-dns.json';
 import vermaschtesNetz from './vermaschtes-netz.json';
 import zweiNetzeRouter from './zwei-netze-router.json';
@@ -85,5 +86,15 @@ export const beispiele: Beispiel[] = [
     auftrag:
       'Schicke von PC A eine Nachricht an 192.168.2.10 und notiere, über welche Router sie läuft. Lass dann die Leitung zwischen Router 1 und Router 3 ausfallen und sende erneut. Stelle anschließend die Routingtabelle von Router 1 auf „von Hand“ und wiederhole den Versuch. Erkläre den Unterschied.',
     daten: vermaschtesNetz,
+  },
+  {
+    id: 'paketvermittlung',
+    titel: 'Paketvermittlung: Teile auf verschiedenen Wegen',
+    stufe: '11',
+    bezug: 'TK 4 · paketorientierte Datenübertragung',
+    beschreibung: 'Zwei gleich lange Wege vom Sender zum Empfänger – einer davon über eine lange Leitung.',
+    auftrag:
+      'Wähle „Ausprobieren“ und schalte unter „Einstellungen“ „verschiedene Wege“ ein. Sende vom Sender einen Text „in Paketen“ an 192.168.2.10. In welcher Reihenfolge kommen die Teile an? Stelle dann die Leitung zum Empfänger auf 25 % Verlust und beobachte, was mit und ohne Bestätigungen passiert.',
+    daten: paketvermittlung,
   },
 ];

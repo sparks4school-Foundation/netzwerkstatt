@@ -75,6 +75,10 @@ export const leitungSchema = z.object({
   nach: id,
   /** Störung simulieren: Über eine ausgefallene Leitung geht nichts mehr. */
   ausgefallen: z.boolean().optional(),
+  /** Gestörte Leitung: Anteil verlorener Pakete in Prozent (0–100). */
+  verlust: z.number().min(0).max(100).optional(),
+  /** Laufzeit in Schritten (1 = normal, 2–3 = lange/langsame Leitung). */
+  verzoegerung: z.number().int().min(1).max(5).optional(),
 });
 
 export const netzDateiSchema = z

@@ -95,7 +95,7 @@ export function leitungEntfernen(netz: NetzDatei, id: string): NetzDatei {
 export function leitungAendern(
   netz: NetzDatei,
   id: string,
-  aenderung: Partial<Pick<Leitung, 'ausgefallen'>>,
+  aenderung: Partial<Pick<Leitung, 'ausgefallen' | 'verlust' | 'verzoegerung'>>,
 ): NetzDatei {
   return { ...netz, leitungen: netz.leitungen.map((l) => (l.id === id ? { ...l, ...aenderung } : l)) };
 }

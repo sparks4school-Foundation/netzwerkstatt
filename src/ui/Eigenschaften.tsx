@@ -117,6 +117,7 @@ function GeraetDetails({
             </button>
           )}
           <NachrichtSenden geraet={geraet} />
+          <Empfangspuffer geraetId={geraet.id} />
         </>
       )}
 
@@ -221,6 +222,44 @@ function LeitungDetails({ id, netz, bearbeitbar }: { id: string; netz: NetzDatei
         <span>{texte.leitungAusgefallen}</span>
       </label>
       <p className={styles.hinweisKlein}>{texte.leitungAusgefallenHinweis}</p>
+      {stufenKonfiguration[netz.stufe].zeigeRoutingtabelle && (
+        <>
+          <label className={styles.feld}>
+            <span>{texte.stoerung}</span>
+            <select
+              value={leitung.verlust ?? 0}
+              onChange={(e) => {
+                const verlust = Number(e.target.value);
+                useApp.getState().setzeLeitung(id, { verlust });
+                useSim.getState().leitungAendern(id, { verlust });
+              }}
+            >
+              {[0, 10, 25, 50, 100].map((p) => (
+                <option key={p} value={p}>
+                  {texte.verlustProzent(p)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className={styles.feld}>
+            <span>{texte.laufzeit}</span>
+            <select
+              value={leitung.verzoegerung ?? 1}
+              onChange={(e) => {
+                const verzoegerung = Number(e.target.value);
+                useApp.getState().setzeLeitung(id, { verzoegerung });
+                useSim.getState().leitungAendern(id, { verzoegerung });
+              }}
+            >
+              {[1, 2, 3].map((n) => (
+                <option key={n} value={n}>
+                  {texte.laufzeitText(n)}
+                </option>
+              ))}
+            </select>
+          </label>
+        </>
+      )}
       {bearbeitbar && (
         <button
           type="button"
@@ -361,6 +400,9 @@ function NachrichtSenden({ geraet }: { geraet: Geraet }) {
   const melde = useApp((z) => z.melde);
   const [zielIp, setzeZielIp] = useState('');
   const [text, setzeText] = useState<string>(texte.nachrichtStandard);
+  const [inPaketen, setzeInPaketen] = useState(false);
+  const [zeichen, setzeZeichen] = useState(4);
+  const mitPaketen = stufenKonfiguration[netz.stufe].zeigeRoutingtabelle;
   if (geraet.typ === 'router') return <RouterEinstellungen router={geraet} netz={netz} bearbeitbar={false} />;
   if (!hatIpAdresse(geraet)) return <p className={styles.wert}>{texte.ipNichtNoetig}</p>;
   const andere = netz.geraete.filter((g) => g.id !== geraet.id && g.ip && hatIpAdresse(g));
@@ -370,7 +412,10 @@ function NachrichtSenden({ geraet }: { geraet: Geraet }) {
       className={styles.inhalt}
       onSubmit={(e) => {
         e.preventDefault();
-        const ergebnis = useSim.getState().senden(geraet.id, zielIp, text || texte.nachrichtStandard);
+        const ergebnis =
+          mitPaketen && inPaketen
+            ? useSim.getState().inPaketenSenden(geraet.id, zielIp, text || texte.langerText, zeichen)
+            : useSim.getState().senden(geraet.id, zielIp, text || texte.nachrichtStandard);
         if (!ergebnis.ok) melde(sendeFehlerText(ergebnis, geraet.name, zielIp.trim()), 'fehler');
       }}
     >
@@ -396,14 +441,101 @@ function NachrichtSenden({ geraet }: { geraet: Geraet }) {
           ))}
         </datalist>
       </label>
+      {mitPaketen && (
+        <label className={styles.ankreuzen}>
+          <input
+            type="checkbox"
+            checked={inPaketen}
+            onChange={(e) => {
+              setzeInPaketen(e.target.checked);
+              if (e.target.checked && text === texte.nachrichtStandard) setzeText(texte.langerText);
+            }}
+          />
+          <span>{texte.inPaketenSenden}</span>
+        </label>
+      )}
       <label className={styles.feld}>
         <span>{texte.nachrichtText}</span>
-        <input value={text} maxLength={40} onChange={(e) => setzeText(e.target.value)} />
+        {mitPaketen && inPaketen ? (
+          <textarea
+            value={text}
+            maxLength={200}
+            rows={3}
+            aria-label={texte.nachrichtText}
+            onChange={(e) => setzeText(e.target.value)}
+          />
+        ) : (
+          <input value={text} maxLength={40} onChange={(e) => setzeText(e.target.value)} />
+        )}
       </label>
+      {mitPaketen && inPaketen && (
+        <label className={styles.feld}>
+          <span>{texte.zeichenProPaket}</span>
+          <input
+            type="number"
+            min={1}
+            max={40}
+            value={zeichen}
+            onChange={(e) => setzeZeichen(Math.max(1, Math.min(40, Number(e.target.value) || 1)))}
+          />
+        </label>
+      )}
       <button type="submit" className={styles.senden} disabled={!zielIp.trim()}>
         <span aria-hidden="true">✉ </span>
         {texte.senden}
       </button>
     </form>
+  );
+}
+
+/** Empfangspuffer (Neuzusammensetzung) und Sendestatus zerlegter Nachrichten an diesem Gerät. */
+function Empfangspuffer({ geraetId }: { geraetId: string }) {
+  const sim = useSim((z) => z.sim);
+  useSim((z) => z.version);
+  if (!sim) return null;
+  const empfangen = sim.empfangspuffer(geraetId);
+  const gesendet = sim.sendungenVon(geraetId);
+  if (empfangen.length === 0 && gesendet.length === 0) return null;
+  return (
+    <>
+      {empfangen.map((p) => (
+        <section key={p.sendungId} className={styles.feld} aria-label={texte.empfangeneTeile}>
+          <span>{texte.empfangeneTeile}</span>
+          <ol className={styles.puffer}>
+            {p.teile.map((t, i) => (
+              <li key={i} data-fehlt={t === null || undefined}>
+                <span className={styles.pufferNr}>{i + 1}</span>
+                <span className={styles.pufferInhalt}>
+                  {t === null ? (
+                    <>
+                      <span aria-hidden="true">✕ </span>
+                      {texte.teilFehlt}
+                    </>
+                  ) : (
+                    <>
+                      <span aria-hidden="true">✓ </span>„{t}“
+                    </>
+                  )}
+                </span>
+              </li>
+            ))}
+          </ol>
+          <p className={styles.hinweisKlein}>{texte.ankunftReihenfolge(p.ankunft.join(', ') || '–')}</p>
+          <p className={styles.wert}>
+            <strong>{texte.zusammengesetzt}:</strong>{' '}
+            {p.text === null ? texte.nochUnvollstaendig : `„${p.text}“`}
+          </p>
+        </section>
+      ))}
+      {gesendet.map((s) => (
+        <section key={s.sendungId} className={styles.feld} aria-label={texte.gesendeteTeile}>
+          <span>{texte.gesendeteTeile}</span>
+          <p className={styles.wert}>
+            {texte.bestaetigtVon(s.bestaetigt.length, s.teile.length)}
+            {s.aufgegeben && ` – ${texte.aufgegeben}`}
+          </p>
+        </section>
+      ))}
+    </>
   );
 }

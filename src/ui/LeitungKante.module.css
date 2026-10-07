@@ -55,3 +55,21 @@
   font-weight: 700;
   pointer-events: none;
 }
+
+/* Lange Leitung: doppelt so dick – zusätzlich zum ⏱-Etikett. */
+.leitung:global(.react-flow__edge-path)[data-lang] {
+  stroke-width: 6;
+}
+
+.eigenschaft {
+  position: absolute;
+  padding: 0 6px;
+  border: 1px solid var(--farbe-text);
+  border-radius: 4px;
+  background: var(--farbe-hintergrund);
+  color: var(--farbe-text);
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+  pointer-events: none;
+}
