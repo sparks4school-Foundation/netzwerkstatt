@@ -2,6 +2,7 @@ import { ReactFlowProvider } from '@xyflow/react';
 import { useEffect } from 'react';
 import { zwischenspeicherLaden, zwischenspeichern } from './ui/dateiAktionen';
 import { Arbeitsflaeche } from './ui/Arbeitsflaeche';
+import { AufgabeDialog } from './ui/AufgabeDialog';
 import { Auftrag } from './ui/Auftrag';
 import { BeispieleDialog } from './ui/BeispieleDialog';
 import { Bausteine } from './ui/Bausteine';
@@ -18,6 +19,7 @@ import styles from './App.module.css';
 
 export function App() {
   const bearbeitbar = useApp((z) => z.modus === 'aufbauen');
+  const gesperrt = useApp((z) => !!z.netz.aufgabe?.aufbauGesperrt);
   useTastenkuerzel();
   useZwischenspeicher();
   useSimulationsUhr();
@@ -28,7 +30,7 @@ export function App() {
         <Kopfleiste />
         <Auftrag />
         <div className={styles.arbeitsbereich}>
-          {bearbeitbar && <Bausteine />}
+          {bearbeitbar && !gesperrt && <Bausteine />}
           <Arbeitsflaeche />
           <Eigenschaften />
         </div>
@@ -36,6 +38,7 @@ export function App() {
         <Meldung />
         <BeispieleDialog />
         <PaketInspektor />
+        <AufgabeDialog />
         <UpdateHinweis />
       </div>
     </ReactFlowProvider>

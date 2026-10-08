@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { adressProbleme } from '../../model/adressen';
 import { ladeNetz, type NetzDatei } from '../../model/datei';
 import { dnsEintragProbleme } from '../../model/dienste';
+import { pruefe } from '../../sim/pruefung';
 import { Simulation } from '../../sim/simulation';
 import { beispiele } from './index';
 
@@ -130,5 +131,55 @@ describe('Beispielnetze', () => {
     bisZumEnde(sim);
     expect(sim.browser('g8')).toMatchObject({ phase: 'fertig', status: 200 });
     expect(sim.natTabelle('g5').length).toBeGreaterThan(0);
+  });
+
+  it('jedes Beispiel hat eine Aufgabe mit Auftrag und Hilfen', () => {
+    for (const b of beispiele) {
+      const netz = lade(b.id);
+      expect(netz.aufgabe?.auftrag.length, b.id).toBeGreaterThan(20);
+      expect(netz.aufgabe?.hilfen.length, b.id).toBeGreaterThan(0);
+    }
+  });
+
+  it.each([
+    'schulnetz-web-dns',
+    'heimnetz-wlan',
+    'zwei-netze-router',
+    'vermaschtes-netz',
+    'heimnetze-internet',
+  ])('%s: Prüfungen bestehen im Ausgangszustand', (id) => {
+    const netz = lade(id);
+    for (const p of netz.aufgabe!.pruefungen)
+      expect(pruefe(netz, p), JSON.stringify(p)).toEqual({ ok: true });
+  });
+
+  it('Fehlersuche: Prüfungen scheitern zuerst und bestehen nach dem Beheben', () => {
+    const netz = lade('fehlersuche-webseite');
+    expect(netz.aufgabe!.aufbauGesperrt).toBe(true);
+    expect(netz.aufgabe!.pruefungen.map((p) => pruefe(netz, p).ok)).toEqual([false, false]);
+    const behoben: NetzDatei = {
+      ...netz,
+      geraete: netz.geraete.map((g) => {
+        if (g.id === 'g1') return { ...g, dnsServer: '192.168.0.3' };
+        if (g.id === 'g2') return { ...g, ip: '192.168.0.11' };
+        if (g.id === 'g5')
+          return {
+            ...g,
+            dienste: [{ art: 'dns-server', eintraege: [{ domain: 'www.schule.test', ip: '192.168.0.2' }] }],
+          };
+        return g;
+      }),
+    };
+    expect(behoben.aufgabe!.pruefungen.map((p) => pruefe(behoben, p).ok)).toEqual([true, true]);
+  });
+
+  it('Erstes Netz: erst nach Vergabe der IP-Adresse an Computer C bestanden', () => {
+    const netz = lade('erstes-netz');
+    expect(netz.aufgabe!.pruefungen.every((p) => pruefe(netz, p).ok)).toBe(false);
+    const geloest: NetzDatei = {
+      ...netz,
+      geraete: netz.geraete.map((g) => (g.id === 'g3' ? { ...g, ip: '192.168.0.12' } : g)),
+    };
+    expect(geloest.aufgabe!.pruefungen.every((p) => pruefe(geloest, p).ok)).toBe(true);
   });
 });

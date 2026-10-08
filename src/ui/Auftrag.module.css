@@ -40,3 +40,67 @@
   color: var(--farbe-text);
   cursor: pointer;
 }
+
+.leise {
+  color: var(--farbe-text-leise);
+  font-size: 0.875rem;
+}
+
+.hilfen {
+  margin: var(--abstand-2) 0 0;
+  padding-left: var(--abstand-6);
+  font-size: 0.9375rem;
+}
+
+.knoepfe {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--abstand-2);
+  margin-top: var(--abstand-2);
+}
+
+.knoepfe button {
+  padding: 0 var(--abstand-3);
+  border: 1px solid var(--farbe-rand);
+  border-radius: var(--radius);
+  background: var(--farbe-hintergrund);
+  color: var(--farbe-text);
+  cursor: pointer;
+}
+
+.knoepfe .primaer {
+  border-color: var(--farbe-akzent);
+  background: var(--farbe-akzent);
+  color: var(--farbe-akzent-text);
+  font-weight: 700;
+}
+
+.ergebnis {
+  margin-top: var(--abstand-2);
+  padding: var(--abstand-2) var(--abstand-3);
+  border: 1px solid var(--farbe-rand);
+  border-radius: var(--radius);
+  background: var(--farbe-hintergrund);
+}
+
+.ergebnis ul {
+  margin: var(--abstand-1) 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.9375rem;
+}
+
+/* Erfüllt/nicht erfüllt: Symbol ✓/✗ + Text + linker Rand (nicht nur Farbe) */
+.ergebnis li {
+  padding-left: var(--abstand-2);
+  border-left: 4px solid var(--farbe-fehler);
+}
+
+.ergebnis li[data-ok] {
+  border-left-color: var(--farbe-ok);
+}
+
+.fazit {
+  margin: 0;
+  font-weight: 700;
+}

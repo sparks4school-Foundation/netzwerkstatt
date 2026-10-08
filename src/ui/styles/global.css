@@ -52,3 +52,43 @@ button {
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+/* Druckansicht (Unplugged): nur Arbeitsauftrag und Netzplan, ohne Bedienelemente. */
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 12mm;
+  }
+
+  body {
+    background: #fff;
+    color: #000;
+  }
+
+  header nav,
+  header > div,
+  aside,
+  [role='toolbar'],
+  dialog,
+  .react-flow__controls,
+  .react-flow__attribution,
+  .react-flow__handle,
+  [role='status'],
+  [role='alert'] {
+    display: none !important;
+  }
+
+  #root,
+  #root > div {
+    height: auto !important;
+  }
+
+  main {
+    height: 160mm !important;
+    break-inside: avoid;
+  }
+
+  section button {
+    display: none !important;
+  }
+}

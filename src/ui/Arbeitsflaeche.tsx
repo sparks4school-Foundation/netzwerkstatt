@@ -46,6 +46,9 @@ export function Arbeitsflaeche() {
   const auswahl = useApp((z) => z.auswahl);
   const bearbeitbar = useApp((z) => z.modus === 'aufbauen');
   const dienstAnsicht = useApp((z) => z.ansicht === 'dienste');
+  const gesperrt = useApp((z) => !!z.netz.aufgabe?.aufbauGesperrt);
+  const aufgabe = useApp((z) => z.netz.aufgabe);
+  const blackbox = useMemo(() => new Set(aufgabe?.blackbox ?? []), [aufgabe]);
   const zeigeRouter = useApp((z) => stufenKonfiguration[z.netz.stufe].zeigeRoutingtabelle);
   const sim = useSim((z) => z.sim);
   const simVersion = useSim((z) => z.version);
@@ -123,14 +126,28 @@ export function Arbeitsflaeche() {
             ip,
             routerIps,
             probleme: kurz,
-            verbindbar: bearbeitbar,
+            verbindbar: bearbeitbar && !gesperrt,
+            blackbox: blackbox.has(g.id),
             dienste: dienstAnsicht ? (g.dienste ?? []).map((d) => d.art) : undefined,
           },
           selected: auswahl?.art === 'geraet' && auswahl.id === g.id,
-          ariaLabel: [g.name, ip && `IP-Adresse ${ip}`, ...kurz].filter(Boolean).join(', '),
+          ariaLabel: blackbox.has(g.id)
+            ? `${g.name}, ${texte.blackbox}`
+            : [g.name, ip && `IP-Adresse ${ip}`, ...kurz].filter(Boolean).join(', '),
         };
       }),
-    [netz.geraete, auswahl, probleme, bearbeitbar, dienstAnsicht, zeigeRouter, sim, simVersion],
+    [
+      netz.geraete,
+      auswahl,
+      probleme,
+      bearbeitbar,
+      dienstAnsicht,
+      zeigeRouter,
+      sim,
+      simVersion,
+      gesperrt,
+      blackbox,
+    ],
   );
 
   const edges = useMemo<(LeitungKanteTyp | VerbindungKanteTyp)[]>(() => {
@@ -249,7 +266,7 @@ export function Arbeitsflaeche() {
         connectionMode={ConnectionMode.Loose}
         connectionRadius={36}
         nodesDraggable={bearbeitbar}
-        nodesConnectable={bearbeitbar}
+        nodesConnectable={bearbeitbar && !gesperrt}
         deleteKeyCode={null}
         multiSelectionKeyCode={null}
         selectionKeyCode={null}

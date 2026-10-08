@@ -8,64 +8,179 @@
       "id": "g1",
       "typ": "computer",
       "name": "PC A",
-      "position": { "x": 0, "y": 160 },
+      "position": {
+        "x": 0,
+        "y": 160
+      },
       "ip": "192.168.1.10",
       "subnetzmaske": "255.255.255.0",
       "gateway": "192.168.1.1",
-      "dienste": [{ "art": "browser" }]
+      "dienste": [
+        {
+          "art": "browser"
+        }
+      ]
     },
-    { "id": "g2", "typ": "switch", "name": "Switch A", "position": { "x": 220, "y": 160 } },
+    {
+      "id": "g2",
+      "typ": "switch",
+      "name": "Switch A",
+      "position": {
+        "x": 220,
+        "y": 160
+      }
+    },
     {
       "id": "g3",
       "typ": "router",
       "name": "Router 1",
-      "position": { "x": 460, "y": 160 },
+      "position": {
+        "x": 460,
+        "y": 160
+      },
       "anschluesse": {
-        "l2": { "ip": "192.168.1.1", "subnetzmaske": "255.255.255.0" },
-        "l3": { "ip": "10.0.12.1", "subnetzmaske": "255.255.255.0" },
-        "l5": { "ip": "10.0.13.1", "subnetzmaske": "255.255.255.0" }
+        "l2": {
+          "ip": "192.168.1.1",
+          "subnetzmaske": "255.255.255.0"
+        },
+        "l3": {
+          "ip": "10.0.12.1",
+          "subnetzmaske": "255.255.255.0"
+        },
+        "l5": {
+          "ip": "10.0.13.1",
+          "subnetzmaske": "255.255.255.0"
+        }
       }
     },
     {
       "id": "g4",
       "typ": "router",
       "name": "Router 2",
-      "position": { "x": 720, "y": 400 },
+      "position": {
+        "x": 720,
+        "y": 400
+      },
       "anschluesse": {
-        "l3": { "ip": "10.0.12.2", "subnetzmaske": "255.255.255.0" },
-        "l4": { "ip": "10.0.23.2", "subnetzmaske": "255.255.255.0" }
+        "l3": {
+          "ip": "10.0.12.2",
+          "subnetzmaske": "255.255.255.0"
+        },
+        "l4": {
+          "ip": "10.0.23.2",
+          "subnetzmaske": "255.255.255.0"
+        }
       }
     },
     {
       "id": "g5",
       "typ": "router",
       "name": "Router 3",
-      "position": { "x": 980, "y": 160 },
+      "position": {
+        "x": 980,
+        "y": 160
+      },
       "anschluesse": {
-        "l5": { "ip": "10.0.13.3", "subnetzmaske": "255.255.255.0" },
-        "l4": { "ip": "10.0.23.3", "subnetzmaske": "255.255.255.0" },
-        "l6": { "ip": "192.168.2.1", "subnetzmaske": "255.255.255.0" }
+        "l5": {
+          "ip": "10.0.13.3",
+          "subnetzmaske": "255.255.255.0"
+        },
+        "l4": {
+          "ip": "10.0.23.3",
+          "subnetzmaske": "255.255.255.0"
+        },
+        "l6": {
+          "ip": "192.168.2.1",
+          "subnetzmaske": "255.255.255.0"
+        }
       }
     },
-    { "id": "g6", "typ": "switch", "name": "Switch B", "position": { "x": 1220, "y": 160 } },
+    {
+      "id": "g6",
+      "typ": "switch",
+      "name": "Switch B",
+      "position": {
+        "x": 1220,
+        "y": 160
+      }
+    },
     {
       "id": "g7",
       "typ": "computer",
       "name": "PC B",
-      "position": { "x": 1440, "y": 160 },
+      "position": {
+        "x": 1440,
+        "y": 160
+      },
       "ip": "192.168.2.10",
       "subnetzmaske": "255.255.255.0",
       "gateway": "192.168.2.1",
-      "dienste": [{ "art": "browser" }]
+      "dienste": [
+        {
+          "art": "browser"
+        }
+      ]
     }
   ],
   "leitungen": [
-    { "id": "l1", "art": "kabel", "von": "g1", "nach": "g2" },
-    { "id": "l2", "art": "kabel", "von": "g2", "nach": "g3" },
-    { "id": "l3", "art": "kabel", "von": "g3", "nach": "g4" },
-    { "id": "l4", "art": "kabel", "von": "g4", "nach": "g5" },
-    { "id": "l5", "art": "kabel", "von": "g3", "nach": "g5" },
-    { "id": "l6", "art": "kabel", "von": "g5", "nach": "g6" },
-    { "id": "l7", "art": "kabel", "von": "g7", "nach": "g6" }
-  ]
+    {
+      "id": "l1",
+      "art": "kabel",
+      "von": "g1",
+      "nach": "g2"
+    },
+    {
+      "id": "l2",
+      "art": "kabel",
+      "von": "g2",
+      "nach": "g3"
+    },
+    {
+      "id": "l3",
+      "art": "kabel",
+      "von": "g3",
+      "nach": "g4"
+    },
+    {
+      "id": "l4",
+      "art": "kabel",
+      "von": "g4",
+      "nach": "g5"
+    },
+    {
+      "id": "l5",
+      "art": "kabel",
+      "von": "g3",
+      "nach": "g5"
+    },
+    {
+      "id": "l6",
+      "art": "kabel",
+      "von": "g5",
+      "nach": "g6"
+    },
+    {
+      "id": "l7",
+      "art": "kabel",
+      "von": "g7",
+      "nach": "g6"
+    }
+  ],
+  "aufgabe": {
+    "titel": "Vermaschtes Netz: Umweg bei Ausfall",
+    "auftrag": "Schicke von PC A eine Nachricht an 192.168.2.10 und notiere, über welche Router sie läuft. Lass dann die Leitung zwischen Router 1 und Router 3 ausfallen und sende erneut. Stelle anschließend die Routingtabelle von Router 1 auf „von Hand“ und wiederhole den Versuch. Erkläre den Unterschied.",
+    "hilfen": [
+      "Wähle eine Leitung aus, um sie ausfallen zu lassen.",
+      "Eine Tabelle „von Hand“ passt sich nicht an – die automatische schon."
+    ],
+    "aufbauGesperrt": false,
+    "blackbox": [],
+    "pruefungen": [
+      {
+        "art": "nachricht",
+        "geraetId": "g1",
+        "zielIp": "192.168.2.10"
+      }
+    ]
+  }
 }

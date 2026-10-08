@@ -8,26 +8,51 @@
       "id": "g1",
       "typ": "computer",
       "name": "Computer 1",
-      "position": { "x": 0, "y": 0 },
+      "position": {
+        "x": 0,
+        "y": 0
+      },
       "ip": "192.168.0.10",
       "dnsServer": "192.168.0.3",
-      "dienste": [{ "art": "browser" }]
+      "dienste": [
+        {
+          "art": "browser"
+        }
+      ]
     },
     {
       "id": "g2",
       "typ": "computer",
       "name": "Computer 2",
-      "position": { "x": 0, "y": 240 },
+      "position": {
+        "x": 0,
+        "y": 240
+      },
       "ip": "192.168.0.11",
       "dnsServer": "192.168.0.3",
-      "dienste": [{ "art": "browser" }]
+      "dienste": [
+        {
+          "art": "browser"
+        }
+      ]
     },
-    { "id": "g3", "typ": "switch", "name": "Switch", "position": { "x": 260, "y": 120 } },
+    {
+      "id": "g3",
+      "typ": "switch",
+      "name": "Switch",
+      "position": {
+        "x": 260,
+        "y": 120
+      }
+    },
     {
       "id": "g4",
       "typ": "server",
       "name": "Webserver-Rechner",
-      "position": { "x": 540, "y": 0 },
+      "position": {
+        "x": 540,
+        "y": 0
+      },
       "ip": "192.168.0.2",
       "dienste": [
         {
@@ -49,17 +74,65 @@
       "id": "g5",
       "typ": "server",
       "name": "DNS-Rechner",
-      "position": { "x": 540, "y": 240 },
+      "position": {
+        "x": 540,
+        "y": 240
+      },
       "ip": "192.168.0.3",
       "dienste": [
-        { "art": "dns-server", "eintraege": [{ "domain": "www.schule.test", "ip": "192.168.0.2" }] }
+        {
+          "art": "dns-server",
+          "eintraege": [
+            {
+              "domain": "www.schule.test",
+              "ip": "192.168.0.2"
+            }
+          ]
+        }
       ]
     }
   ],
   "leitungen": [
-    { "id": "l1", "art": "kabel", "von": "g1", "nach": "g3" },
-    { "id": "l2", "art": "kabel", "von": "g2", "nach": "g3" },
-    { "id": "l3", "art": "kabel", "von": "g4", "nach": "g3" },
-    { "id": "l4", "art": "kabel", "von": "g5", "nach": "g3" }
-  ]
+    {
+      "id": "l1",
+      "art": "kabel",
+      "von": "g1",
+      "nach": "g3"
+    },
+    {
+      "id": "l2",
+      "art": "kabel",
+      "von": "g2",
+      "nach": "g3"
+    },
+    {
+      "id": "l3",
+      "art": "kabel",
+      "von": "g4",
+      "nach": "g3"
+    },
+    {
+      "id": "l4",
+      "art": "kabel",
+      "von": "g5",
+      "nach": "g3"
+    }
+  ],
+  "aufgabe": {
+    "titel": "Schulnetz mit Webserver und DNS",
+    "auftrag": "Öffne auf Computer 1 den Browser und rufe www.schule.test auf. Beobachte im Protokoll: Wen fragt der Computer zuerst – und warum? Schalte danach auf die Ansicht „Dienste“.",
+    "hilfen": [
+      "Wähle Computer 1 aus und tippe im Modus „Ausprobieren“ auf „Browser öffnen“.",
+      "Im Protokoll steht zuerst eine DNS-Anfrage. An welche IP-Adresse geht sie?"
+    ],
+    "aufbauGesperrt": false,
+    "blackbox": [],
+    "pruefungen": [
+      {
+        "art": "webseite",
+        "geraetId": "g1",
+        "adresse": "www.schule.test"
+      }
+    ]
+  }
 }

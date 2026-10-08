@@ -24,7 +24,7 @@ export function BeispieleDialog() {
       melde(ergebnis.meldung, 'fehler');
       return;
     }
-    ersetzeNetz(ergebnis.netz, { titel: b.titel, text: b.auftrag });
+    ersetzeNetz(ergebnis.netz);
     setzeBeispieleOffen(false);
     melde(texte.beispielGeoeffnet(b.titel));
   };

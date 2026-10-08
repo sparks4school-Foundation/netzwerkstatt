@@ -8,30 +8,95 @@
       "id": "g1",
       "typ": "computer",
       "name": "Computer A",
-      "position": { "x": 0, "y": 0 },
+      "position": {
+        "x": 0,
+        "y": 0
+      },
       "ip": "192.168.0.10",
-      "dienste": [{ "art": "browser" }]
+      "dienste": [
+        {
+          "art": "browser"
+        }
+      ]
     },
     {
       "id": "g2",
       "typ": "computer",
       "name": "Computer B",
-      "position": { "x": 0, "y": 220 },
+      "position": {
+        "x": 0,
+        "y": 220
+      },
       "ip": "192.168.0.11",
-      "dienste": [{ "art": "browser" }]
+      "dienste": [
+        {
+          "art": "browser"
+        }
+      ]
     },
     {
       "id": "g3",
       "typ": "computer",
       "name": "Computer C",
-      "position": { "x": 480, "y": 110 },
-      "dienste": [{ "art": "browser" }]
+      "position": {
+        "x": 480,
+        "y": 110
+      },
+      "dienste": [
+        {
+          "art": "browser"
+        }
+      ]
     },
-    { "id": "g4", "typ": "switch", "name": "Switch", "position": { "x": 240, "y": 110 } }
+    {
+      "id": "g4",
+      "typ": "switch",
+      "name": "Switch",
+      "position": {
+        "x": 240,
+        "y": 110
+      }
+    }
   ],
   "leitungen": [
-    { "id": "l1", "art": "kabel", "von": "g1", "nach": "g4" },
-    { "id": "l2", "art": "kabel", "von": "g2", "nach": "g4" },
-    { "id": "l3", "art": "kabel", "von": "g3", "nach": "g4" }
-  ]
+    {
+      "id": "l1",
+      "art": "kabel",
+      "von": "g1",
+      "nach": "g4"
+    },
+    {
+      "id": "l2",
+      "art": "kabel",
+      "von": "g2",
+      "nach": "g4"
+    },
+    {
+      "id": "l3",
+      "art": "kabel",
+      "von": "g3",
+      "nach": "g4"
+    }
+  ],
+  "aufgabe": {
+    "titel": "Erstes lokales Rechnernetz",
+    "auftrag": "Gib Computer C eine passende IP-Adresse. Wechsle dann zu „Ausprobieren“ und schicke von Computer A eine Nachricht an Computer C.",
+    "hilfen": [
+      "Schau dir die IP-Adressen von Computer A und B an: Welche Zahlen sind gleich?",
+      "Die ersten drei Zahlen müssen bei allen Geräten im lokalen Rechnernetz gleich sein, die letzte muss sich unterscheiden.",
+      "Zum Beispiel 192.168.0.12 – oder nutze den Knopf „Vorschlag“."
+    ],
+    "aufbauGesperrt": false,
+    "blackbox": [],
+    "pruefungen": [
+      {
+        "art": "adressen-ok"
+      },
+      {
+        "art": "nachricht",
+        "geraetId": "g3",
+        "zielIp": "192.168.0.10"
+      }
+    ]
+  }
 }

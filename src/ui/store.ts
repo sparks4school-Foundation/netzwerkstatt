@@ -3,6 +3,7 @@ import { geraeteTexte } from '../content/geraete';
 import { verbindungsMeldung } from '../content/meldungen';
 import {
   leeresNetz,
+  type Aufgabe,
   type Dienst,
   type Geraet,
   type GeraetTyp,
@@ -19,6 +20,7 @@ import {
   verbinden,
 } from '../model/netz';
 import type { StufeId } from '../model/stufe';
+import { pruefe, type PruefErgebnis } from '../sim/pruefung';
 
 export type Modus = 'aufbauen' | 'ausprobieren';
 export type Ansicht = 'infrastruktur' | 'dienste';
@@ -37,8 +39,11 @@ interface AppZustand {
   auswahl: Auswahl;
   verbindungsart: LeitungsArt;
   meldung: Meldung;
-  /** Arbeitsauftrag des zuletzt geöffneten Beispiels (wird nicht gespeichert; Aufgabenmodus folgt in Phase 5). */
-  auftrag: { titel: string; text: string; sichtbar: boolean } | null;
+  /** Aufgabe: Leiste ein-/ausgeblendet, aufgedeckte Hilfestufen, Ergebnis von „Lösung prüfen“ (nicht gespeichert). */
+  auftragSichtbar: boolean;
+  hilfeStufe: number;
+  pruefErgebnisse: PruefErgebnis[] | null;
+  aufgabeBearbeiten: boolean;
   beispieleOffen: boolean;
 
   setzeStufe: (stufe: StufeId) => void;
@@ -70,8 +75,12 @@ interface AppZustand {
 
   rueckgaengig: () => void;
   wiederholen: () => void;
-  ersetzeNetz: (netz: NetzDatei, auftrag?: { titel: string; text: string }) => void;
+  ersetzeNetz: (netz: NetzDatei) => void;
   setzeAuftragSichtbar: (sichtbar: boolean) => void;
+  naechsteHilfe: () => void;
+  loesungPruefen: () => void;
+  setzeAufgabe: (aufgabe: Aufgabe | undefined) => void;
+  setzeAufgabeBearbeiten: (offen: boolean) => void;
   setzeBeispieleOffen: (offen: boolean) => void;
 }
 
@@ -104,7 +113,10 @@ export const useApp = create<AppZustand>()((set, get) => ({
   auswahl: null,
   verbindungsart: 'kabel',
   meldung: null,
-  auftrag: null,
+  auftragSichtbar: true,
+  hilfeStufe: 0,
+  pruefErgebnisse: null,
+  aufgabeBearbeiten: false,
   beispieleOffen: false,
 
   setzeStufe: (stufe) => set((z) => ({ netz: { ...z.netz, stufe } })),
@@ -117,6 +129,8 @@ export const useApp = create<AppZustand>()((set, get) => ({
 
   geraetHinzufuegen: (typ, position) =>
     set((z) => {
+      // Aufgabe mit gesperrtem Aufbau: nur einstellen, nichts hinzufügen/entfernen
+      if (z.netz.aufgabe?.aufbauGesperrt) return {};
       const { netz, id } = geraetHinzufuegen(
         z.netz,
         typ,
@@ -156,6 +170,7 @@ export const useApp = create<AppZustand>()((set, get) => ({
 
   verbinde: (vonId, nachId, art) => {
     const z = get();
+    if (z.netz.aufgabe?.aufbauGesperrt) return false;
     let ergebnis = verbinden(z.netz, vonId, nachId, art ?? z.verbindungsart);
     // Beim Ziehen ohne ausdrückliche Wahl: Kann ein Gerät die gewählte Art gar nicht (Smartphone + Kabel,
     // Server + WLAN), wird automatisch die andere Art versucht.
@@ -181,13 +196,19 @@ export const useApp = create<AppZustand>()((set, get) => ({
   },
 
   entferne: (auswahl) =>
-    set((z) => ({
-      ...mitVerlauf(
-        z,
-        auswahl.art === 'geraet' ? geraetEntfernen(z.netz, auswahl.id) : leitungEntfernen(z.netz, auswahl.id),
-      ),
-      auswahl: z.auswahl?.id === auswahl.id ? null : z.auswahl,
-    })),
+    set((z) =>
+      z.netz.aufgabe?.aufbauGesperrt
+        ? {}
+        : {
+            ...mitVerlauf(
+              z,
+              auswahl.art === 'geraet'
+                ? geraetEntfernen(z.netz, auswahl.id)
+                : leitungEntfernen(z.netz, auswahl.id),
+            ),
+            auswahl: z.auswahl?.id === auswahl.id ? null : z.auswahl,
+          },
+    ),
 
   rueckgaengig: () =>
     set((z) => {
@@ -208,15 +229,24 @@ export const useApp = create<AppZustand>()((set, get) => ({
       return { netz: naechster, vergangenheit: [...z.vergangenheit, z.netz], zukunft: rest, auswahl: null };
     }),
 
-  ersetzeNetz: (netz, auftrag) =>
+  ersetzeNetz: (netz) =>
     set({
       netz,
       vergangenheit: [],
       zukunft: [],
       auswahl: null,
       modus: 'aufbauen',
-      auftrag: auftrag ? { ...auftrag, sichtbar: true } : null,
+      auftragSichtbar: true,
+      hilfeStufe: 0,
+      pruefErgebnisse: null,
     }),
-  setzeAuftragSichtbar: (sichtbar) => set((z) => ({ auftrag: z.auftrag && { ...z.auftrag, sichtbar } })),
+  setzeAuftragSichtbar: (auftragSichtbar) => set({ auftragSichtbar }),
+  naechsteHilfe: () =>
+    set((z) => ({ hilfeStufe: Math.min(z.hilfeStufe + 1, z.netz.aufgabe?.hilfen.length ?? 0) })),
+  loesungPruefen: () =>
+    set((z) => ({ pruefErgebnisse: (z.netz.aufgabe?.pruefungen ?? []).map((p) => pruefe(z.netz, p)) })),
+  setzeAufgabe: (aufgabe) =>
+    set((z) => ({ ...mitVerlauf(z, { ...z.netz, aufgabe }), pruefErgebnisse: null, hilfeStufe: 0 })),
+  setzeAufgabeBearbeiten: (aufgabeBearbeiten) => set({ aufgabeBearbeiten }),
   setzeBeispieleOffen: (beispieleOffen) => set({ beispieleOffen }),
 }));

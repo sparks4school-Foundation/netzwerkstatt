@@ -1,0 +1,66 @@
+.dialog {
+  width: min(640px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  padding: var(--abstand-4);
+  border: 2px solid var(--farbe-text);
+  border-radius: 12px;
+  background: var(--farbe-hintergrund);
+  color: var(--farbe-text);
+}
+
+.dialog::backdrop {
+  background: rgb(0 0 0 / 0.45);
+}
+
+.kopf {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.kopf h2 {
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+.schliessen {
+  border: 0;
+  background: none;
+  color: var(--farbe-text);
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.filter {
+  display: flex;
+  align-items: center;
+  gap: var(--abstand-2);
+  margin: var(--abstand-2) 0;
+}
+
+.filter select {
+  min-height: var(--touch-min);
+  padding: 0 var(--abstand-2);
+  border: 1px solid var(--farbe-rand);
+  border-radius: 6px;
+  background: var(--farbe-hintergrund);
+  color: var(--farbe-text);
+  font: inherit;
+}
+
+.liste {
+  margin: 0;
+}
+
+.liste > div {
+  padding: var(--abstand-2) 0;
+  border-bottom: 1px solid var(--farbe-flaeche);
+}
+
+.liste dt {
+  font-weight: 700;
+}
+
+.liste dd {
+  margin: 2px 0 0;
+}

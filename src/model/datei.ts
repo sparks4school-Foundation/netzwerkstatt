@@ -95,6 +95,31 @@ export const leitungSchema = z.object({
   verzoegerung: z.number().int().min(1).max(5).optional(),
 });
 
+/** Automatische Prüfung einer Aufgabe („Lösung prüfen“). */
+export const pruefungSchema = z.discriminatedUnion('art', [
+  /** Browser auf dem Gerät lädt die Adresse erfolgreich. */
+  z.object({ art: z.literal('webseite'), geraetId: id, adresse: z.string() }),
+  /** Nachricht vom Gerät an die IP-Adresse kommt an und wird beantwortet. */
+  z.object({ art: z.literal('nachricht'), geraetId: id, zielIp: z.string() }),
+  /** Im ganzen Netz gibt es keine Adressprobleme. */
+  z.object({ art: z.literal('adressen-ok') }),
+  /** Gerät bekommt per DHCP eine Adresse. */
+  z.object({ art: z.literal('dhcp'), geraetId: id }),
+]);
+
+/** Aufgabe für Schüler:innen (Aufgabenmodus, Phase 5). */
+export const aufgabeSchema = z.object({
+  titel: z.string(),
+  auftrag: z.string(),
+  /** Hilfestufen, die nacheinander aufgedeckt werden (Differenzierung). */
+  hilfen: z.array(z.string()).max(3).default([]),
+  /** Keine Geräte/Leitungen hinzufügen oder entfernen – nur einstellen (z. B. Diagnoseaufgaben). */
+  aufbauGesperrt: z.boolean().default(false),
+  /** Geräte, deren Innenleben verborgen ist (Blackbox) – nur ihr Verhalten ist beobachtbar. */
+  blackbox: z.array(id).default([]),
+  pruefungen: z.array(pruefungSchema).default([]),
+});
+
 export const netzDateiSchema = z
   .object({
     format: z.literal(DATEI_FORMAT),
@@ -103,6 +128,7 @@ export const netzDateiSchema = z
     titel: z.string().default(''),
     geraete: z.array(geraetSchema),
     leitungen: z.array(leitungSchema),
+    aufgabe: aufgabeSchema.optional(),
   })
   .superRefine((netz, ctx) => {
     const ids = new Set<string>();
@@ -124,6 +150,8 @@ export type Dienst = z.infer<typeof dienstSchema>;
 export type DienstArt = Dienst['art'];
 export type Leitung = z.infer<typeof leitungSchema>;
 export type LeitungsArt = Leitung['art'];
+export type Aufgabe = z.infer<typeof aufgabeSchema>;
+export type Pruefung = z.infer<typeof pruefungSchema>;
 export type RoutingEintrag = NonNullable<Geraet['routing']>['tabelle'][number];
 
 export type LadeErgebnis = { ok: true; netz: NetzDatei } | { ok: false; meldung: string };
