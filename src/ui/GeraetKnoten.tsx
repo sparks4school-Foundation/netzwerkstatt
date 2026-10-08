@@ -16,6 +16,8 @@ export type GeraetKnotenDaten = {
   /** Kurzbeschreibungen von Adressproblemen, z. B. „IP doppelt“. */
   probleme: string[];
   verbindbar: boolean;
+  /** Innenleben verborgen (Aufgabe): keine Adressen, Dienste oder Probleme anzeigen. */
+  blackbox?: boolean;
   /** Nur in der Dienste-Ansicht gesetzt: installierte Dienste. */
   dienste?: DienstArt[];
 };
@@ -32,7 +34,11 @@ export type GeraetKnotenTyp = Node<GeraetKnotenDaten, 'geraet'>;
  * Darstellung eines Geräts im Netzplan. Name, Typ und IP-Adresse stehen als Text da.
  * Probleme: Warnsymbol + Text + gestrichelter Rahmen (nicht nur Farbe).
  */
-export const GeraetKnoten = memo(function GeraetKnoten({ data, selected }: NodeProps<GeraetKnotenTyp>) {
+export const GeraetKnoten = memo(function GeraetKnoten({ data: roh, selected }: NodeProps<GeraetKnotenTyp>) {
+  // Blackbox: nur Name und Typ – alles Innere bleibt verborgen
+  const data = roh.blackbox
+    ? { ...roh, ip: undefined, routerIps: undefined, probleme: [], dienste: undefined }
+    : roh;
   const problem = data.probleme.length > 0;
   return (
     <div
@@ -48,6 +54,12 @@ export const GeraetKnoten = memo(function GeraetKnoten({ data, selected }: NodeP
       {data.ip !== undefined && (
         <span className={styles.ip} data-leer={!data.ip || undefined}>
           {data.ip || texte.keineIp}
+        </span>
+      )}
+      {roh.blackbox && (
+        <span className={styles.blackbox}>
+          <span aria-hidden="true">◼ </span>
+          {texte.blackbox}
         </span>
       )}
       {data.routerIps && data.routerIps.length > 0 && (

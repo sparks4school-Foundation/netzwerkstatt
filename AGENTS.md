@@ -4,7 +4,7 @@ Diese Datei ist die zentrale Projektbeschreibung für Menschen **und** KI-Agente
 Sie enthält Ziel, Anforderungen, Architekturentscheidungen, Konventionen und Roadmap.
 Bei Widersprüchen zwischen Code und dieser Datei: nachfragen, dann diese Datei aktualisieren.
 
-> Status: **Phase 0–4c gemergt (live), Phase 4d (DHCP, NAT) umgesetzt** auf Branch `phase-4d-dhcp-nat` (Stand 2026-10-07). Damit ist Klasse 11 inhaltlich abgedeckt. Nächster Schritt: Phase 5 (Unterricht: Aufgabenmodus, Hilfestufen, Export).
+> Status: **Phase 0–4 gemergt (live), Phase 5 (Unterricht) umgesetzt** auf Branch `phase-5-unterricht` (Stand 2026-10-07). Nächster Schritt: Unterrichtstest und Rückmeldungen; danach optionale Erweiterungen (Phase 6).
 > Repository: https://github.com/sparks4school-Foundation/netzwerkstatt (öffentlich) · Live: https://sparks4school-foundation.github.io/netzwerkstatt/
 
 ## 0. Schnellstart für Agenten
@@ -264,7 +264,7 @@ So bleibt die Simulation testbar, und später sind andere Oberflächen (z. B. Dr
 
 - Liegen als normale Netzwerkstatt-Dateien in `src/content/beispiele/*.json` (CC BY-SA 4.0) und werden in `src/content/beispiele/index.ts` mit Titel, Stufe, Bildungsplanbezug, Beschreibung und **Arbeitsauftrag** registriert.
 - `beispiele.test.ts` prüft: Jede Datei ist gültig; das Schulnetz funktioniert sofort; die Fehlersuche enthält genau die beabsichtigten Fehler und ist nach dem Beheben lösbar. **Neue Beispiele immer mit so einem Test absichern.**
-- Öffnen über „Beispiele“ in der Kopfleiste oder auf der leeren Arbeitsfläche. Der Arbeitsauftrag erscheint als ausblendbare Leiste unter der Kopfleiste; er wird (noch) nicht in der Datei gespeichert – das übernimmt der Aufgabenmodus in Phase 5.
+- Öffnen über „Beispiele“ in der Kopfleiste oder auf der leeren Arbeitsfläche. Seit Phase 5 steht der Arbeitsauftrag (mit Hilfen und Prüfungen) als `aufgabe` in der Beispieldatei selbst.
 
 ### 5.9 Routing (Phase 4a, Klasse 11)
 
@@ -306,11 +306,17 @@ So bleibt die Simulation testbar, und später sind andere Oberflächen (z. B. Dr
 - **Beispiel:** „Heimnetze und Internet (DHCP und NAT)“.
 - **Achtung (Zustand-Selektoren):** Nie ein neues Array/Objekt im Selektor erzeugen (`useSim((z) => z.sim?.x() ?? [])`) – das führt zu einer Endlos-Render-Schleife. Stattdessen `z.sim` auswählen und außerhalb lesen.
 
-### 5.13 Aufgabenmodus
+### 5.13 Aufgabenmodus, Blackbox, Export, Glossar (Phase 5)
 
-- Lehrkraft baut ein Netz, schaltet „Aufgabe erstellen“ ein und legt fest: Arbeitsauftrag (Text), Hilfestufen (1–3, schrittweise aufdeckbar), welche Elemente gesperrt sind, optional eingebaute Fehler und automatische Prüfbedingungen (z. B. „Browser auf PC-1 lädt www.schule.test“).
-- Export als normale JSON-Datei → Verteilung über Moodle/Schulplattform/USB.
-- Keine Rückmeldung an die Lehrkraft über einen Server (DSGVO); Schüler:innen speichern ihr Ergebnis selbst als Datei.
+- **Aufgabe in der Datei** (`aufgabe`, optional): `titel`, `auftrag`, `hilfen` (max. 3, nacheinander aufdeckbar), `aufbauGesperrt` (keine Geräte/Leitungen hinzufügen/entfernen – Store blockiert, Palette/Anschlusspunkte/Entfernen ausgeblendet), `blackbox` (Geräte-IDs), `pruefungen`.
+- **Prüfungen** (`sim/pruefung.ts`): `webseite` (Browser lädt Adresse, Status 200), `nachricht` (kommt an **und** Antwort kommt zurück), `adressen-ok`, `dhcp`. Jede läuft in einer eigenen, unsichtbaren Simulation des aktuellen Netzes; DHCP-Clients holen vorher automatisch eine Adresse. Rückmeldung je Bedingung mit Hinweis, ohne die Lösung zu verraten (`pruefFehlerText`).
+- **Auftragsleiste** (`ui/Auftrag.tsx`): Auftrag, „Hilfe n von m anzeigen“, „Lösung prüfen“ mit ✓/✗ je Bedingung. Hilfestufe und Prüfergebnis sind Sitzungszustand (nicht in der Datei).
+- **Lehrkräfte:** „Mehr → Aufgabe erstellen/bearbeiten“ (`ui/AufgabeDialog.tsx`). Keine Rollen/kein Login: Schüler:innen könnten den Dialog öffnen und Hilfen lesen – bewusst akzeptiert (Datenschutz, kein Server).
+- **Blackbox:** Gerät zeigt nur Name, Typ und „◼ Blackbox“ (auch für Screenreader ohne IP); Panel nur mit Hinweis. Verhalten bleibt über Simulation/Protokoll/Pakete beobachtbar.
+- **Export/Druck:** „Netzplan als Bild (PNG)“ über `html-to-image` (MIT, lädt nichts nach), eingepasst ohne Bedienelemente. „Drucken“: Druck-CSS (A4 quer) zeigt nur Auftrag und Netzplan. Sequenzdiagramm-SVG-Export siehe 5.10.
+- **Glossar:** „Mehr → Glossar“ mit allen verbindlichen Begriffen, nach Stufe gefiltert (`abStufe`).
+- **Beispiele:** Aufträge, Hilfen und Prüfungen stehen jetzt in den JSON-Dateien; Tests sichern ab, dass funktionierende Beispiele ihre Prüfungen bestehen und Diagnoseaufgaben erst nach dem Beheben.
+- **Barrierefreiheit:** `select`/`textarea` innerhalb eines `label` bekommen ein explizites `aria-label` (sonst fließen Optionstexte/Inhalt in den Namen ein). Escape schließt die Auswahl auch nach Klick auf ein Kontrollkästchen; in Textfeldern nimmt Escape zuerst den Fokus weg.
 
 ---
 
@@ -363,7 +369,7 @@ So bleibt die Simulation testbar, und später sind andere Oberflächen (z. B. Dr
 | 2 – Engine-Kern ✅       | Event-Queue, Switch, IP im lokalen Netz, „Nachricht senden“, Animation, Pause/Schritt, Protokoll, Erkennung doppelter IP                                                                                                            | 7/8 TK 3                                    |
 | 3 – Dienste (**MVP**) ✅ | Dienste installieren, Webserver mit HTML-Editor, Browser, DNS-Server, Namensauflösung Schritt für Schritt, Dienste-Ansicht                                                                                                          | 7/8 TK 1, 4, 5 → **erster Unterrichtstest** |
 | 4 – Stufe 11             | **4a ✅** Router, Routingtabellen, mehrere Netze, Leitungsausfall/Umweg, privat/öffentlich · **4b ✅** Schichtenansicht, Sequenzdiagramm · **4c ✅** Pakete zerlegen/Verlust/Neuzusammensetzung · **4d ✅** DHCP, vereinfachtes NAT | 11 TK 1–7                                   |
-| 5 – Unterricht           | Aufgabenmodus, Hilfestufen, Fehler einbauen, Blackbox/Whitebox, Druck/Export (Netzplan, Sequenzdiagramm), Glossar-Tooltips komplett                                                                                                 | Querschnitt                                 |
+| 5 – Unterricht ✅        | Aufgabenmodus, Hilfestufen, Fehler einbauen, Blackbox/Whitebox, Druck/Export (Netzplan, Sequenzdiagramm), Glossar-Tooltips komplett                                                                                                 | Querschnitt                                 |
 | 6 – Optional             | Verschlüsselung lesbar/nicht lesbar, Parität/Prüfsumme, MITM/Zertifikate, Kommunikationsformen, Filius-Import                                                                                                                       | Kann                                        |
 
 ---

@@ -8,41 +8,83 @@
       "id": "g1",
       "typ": "computer",
       "name": "Computer A1",
-      "position": { "x": 0, "y": 0 },
+      "position": {
+        "x": 0,
+        "y": 0
+      },
       "ip": "192.168.1.10",
       "subnetzmaske": "255.255.255.0",
       "gateway": "192.168.1.1",
       "dnsServer": "192.168.2.2",
-      "dienste": [{ "art": "browser" }]
+      "dienste": [
+        {
+          "art": "browser"
+        }
+      ]
     },
     {
       "id": "g2",
       "typ": "computer",
       "name": "Computer A2",
-      "position": { "x": 0, "y": 240 },
+      "position": {
+        "x": 0,
+        "y": 240
+      },
       "ip": "192.168.1.11",
       "subnetzmaske": "255.255.255.0",
       "gateway": "192.168.1.1",
       "dnsServer": "192.168.2.2",
-      "dienste": [{ "art": "browser" }]
+      "dienste": [
+        {
+          "art": "browser"
+        }
+      ]
     },
-    { "id": "g3", "typ": "switch", "name": "Switch A", "position": { "x": 240, "y": 120 } },
+    {
+      "id": "g3",
+      "typ": "switch",
+      "name": "Switch A",
+      "position": {
+        "x": 240,
+        "y": 120
+      }
+    },
     {
       "id": "g4",
       "typ": "router",
       "name": "Router",
-      "position": { "x": 480, "y": 120 },
+      "position": {
+        "x": 480,
+        "y": 120
+      },
       "anschluesse": {
-        "l3": { "ip": "192.168.1.1", "subnetzmaske": "255.255.255.0" },
-        "l4": { "ip": "192.168.2.1", "subnetzmaske": "255.255.255.0" }
+        "l3": {
+          "ip": "192.168.1.1",
+          "subnetzmaske": "255.255.255.0"
+        },
+        "l4": {
+          "ip": "192.168.2.1",
+          "subnetzmaske": "255.255.255.0"
+        }
       }
     },
-    { "id": "g5", "typ": "switch", "name": "Switch B", "position": { "x": 720, "y": 120 } },
+    {
+      "id": "g5",
+      "typ": "switch",
+      "name": "Switch B",
+      "position": {
+        "x": 720,
+        "y": 120
+      }
+    },
     {
       "id": "g6",
       "typ": "server",
       "name": "Server B",
-      "position": { "x": 960, "y": 0 },
+      "position": {
+        "x": 960,
+        "y": 0
+      },
       "ip": "192.168.2.2",
       "subnetzmaske": "255.255.255.0",
       "gateway": "192.168.2.1",
@@ -56,27 +98,89 @@
             }
           ]
         },
-        { "art": "dns-server", "eintraege": [{ "domain": "www.netz-b.test", "ip": "192.168.2.2" }] }
+        {
+          "art": "dns-server",
+          "eintraege": [
+            {
+              "domain": "www.netz-b.test",
+              "ip": "192.168.2.2"
+            }
+          ]
+        }
       ]
     },
     {
       "id": "g7",
       "typ": "computer",
       "name": "Computer B1",
-      "position": { "x": 960, "y": 240 },
+      "position": {
+        "x": 960,
+        "y": 240
+      },
       "ip": "192.168.2.10",
       "subnetzmaske": "255.255.255.0",
       "gateway": "192.168.2.1",
       "dnsServer": "192.168.2.2",
-      "dienste": [{ "art": "browser" }]
+      "dienste": [
+        {
+          "art": "browser"
+        }
+      ]
     }
   ],
   "leitungen": [
-    { "id": "l1", "art": "kabel", "von": "g1", "nach": "g3" },
-    { "id": "l2", "art": "kabel", "von": "g2", "nach": "g3" },
-    { "id": "l3", "art": "kabel", "von": "g3", "nach": "g4" },
-    { "id": "l4", "art": "kabel", "von": "g4", "nach": "g5" },
-    { "id": "l5", "art": "kabel", "von": "g6", "nach": "g5" },
-    { "id": "l6", "art": "kabel", "von": "g7", "nach": "g5" }
-  ]
+    {
+      "id": "l1",
+      "art": "kabel",
+      "von": "g1",
+      "nach": "g3"
+    },
+    {
+      "id": "l2",
+      "art": "kabel",
+      "von": "g2",
+      "nach": "g3"
+    },
+    {
+      "id": "l3",
+      "art": "kabel",
+      "von": "g3",
+      "nach": "g4"
+    },
+    {
+      "id": "l4",
+      "art": "kabel",
+      "von": "g4",
+      "nach": "g5"
+    },
+    {
+      "id": "l5",
+      "art": "kabel",
+      "von": "g6",
+      "nach": "g5"
+    },
+    {
+      "id": "l6",
+      "art": "kabel",
+      "von": "g7",
+      "nach": "g5"
+    }
+  ],
+  "aufgabe": {
+    "titel": "Zwei Netze mit Router",
+    "auftrag": "Rufe auf Computer A1 die Seite www.netz-b.test auf. Verfolge im Protokoll, welche Rolle der Router spielt. Sieh dir dann seine Routingtabelle an: Woher weiß er, wohin er die Pakete schicken muss? Was passiert, wenn du bei Computer A1 das Gateway löschst?",
+    "hilfen": [
+      "Wähle den Router aus: In der Routingtabelle stehen beide Netze.",
+      "Ohne Gateway weiß Computer A1 nicht, wohin Pakete für andere Netze gehen."
+    ],
+    "aufbauGesperrt": false,
+    "blackbox": [],
+    "pruefungen": [
+      {
+        "art": "webseite",
+        "geraetId": "g1",
+        "adresse": "www.netz-b.test"
+      }
+    ]
+  }
 }

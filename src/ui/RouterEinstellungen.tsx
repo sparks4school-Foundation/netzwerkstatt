@@ -247,6 +247,7 @@ function Routingtabelle({
                 <label className={`${styles.feld} ${styles.wachsen}`}>
                   <span>{`${texte.anschluss} ${i + 1}`}</span>
                   <select
+                    aria-label={`${texte.anschluss} ${i + 1}`}
                     value={e.leitungId}
                     onChange={(ev) => aendereZeile(i, 'leitungId', ev.target.value)}
                   >

@@ -79,6 +79,8 @@ function GeraetDetails({
 
   const leitungen = leitungenVon(netz, geraet.id);
   const andere = netz.geraete.filter((g) => g.id !== geraet.id);
+  const gesperrt = !!netz.aufgabe?.aufbauGesperrt;
+  const blackbox = !!netz.aufgabe?.blackbox.includes(geraet.id);
 
   return (
     <div className={styles.inhalt}>
@@ -99,7 +101,12 @@ function GeraetDetails({
         </p>
       </div>
 
-      {bearbeitbar ? (
+      {blackbox ? (
+        <p className={styles.probleme}>
+          <span aria-hidden="true">◼ </span>
+          <strong>{texte.blackbox}:</strong> {texte.blackboxHinweis}
+        </p>
+      ) : bearbeitbar ? (
         <>
           <NetzwerkEinstellungen geraet={geraet} netz={netz} />
           <DiensteAbschnitt geraet={geraet} />
@@ -145,7 +152,7 @@ function GeraetDetails({
         )}
       </section>
 
-      {bearbeitbar && andere.length > 0 && (
+      {bearbeitbar && !gesperrt && andere.length > 0 && (
         <form
           className={styles.feld}
           onSubmit={(e) => {
@@ -182,7 +189,7 @@ function GeraetDetails({
         </form>
       )}
 
-      {bearbeitbar && (
+      {bearbeitbar && !gesperrt && (
         <button
           type="button"
           className={styles.entfernen}
@@ -227,6 +234,7 @@ function LeitungDetails({ id, netz, bearbeitbar }: { id: string; netz: NetzDatei
           <label className={styles.feld}>
             <span>{texte.stoerung}</span>
             <select
+              aria-label={texte.stoerung}
               value={leitung.verlust ?? 0}
               onChange={(e) => {
                 const verlust = Number(e.target.value);
@@ -244,6 +252,7 @@ function LeitungDetails({ id, netz, bearbeitbar }: { id: string; netz: NetzDatei
           <label className={styles.feld}>
             <span>{texte.laufzeit}</span>
             <select
+              aria-label={texte.laufzeit}
               value={leitung.verzoegerung ?? 1}
               onChange={(e) => {
                 const verzoegerung = Number(e.target.value);
@@ -260,7 +269,7 @@ function LeitungDetails({ id, netz, bearbeitbar }: { id: string; netz: NetzDatei
           </label>
         </>
       )}
-      {bearbeitbar && (
+      {bearbeitbar && !netz.aufgabe?.aufbauGesperrt && (
         <button
           type="button"
           className={styles.entfernen}

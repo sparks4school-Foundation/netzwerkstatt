@@ -8,30 +8,71 @@
       "id": "g1",
       "typ": "computer",
       "name": "PC Familie A",
-      "position": { "x": 0, "y": 0 },
+      "position": {
+        "x": 0,
+        "y": 0
+      },
       "dhcp": true,
-      "dienste": [{ "art": "browser" }]
+      "dienste": [
+        {
+          "art": "browser"
+        }
+      ]
     },
-    { "id": "g2", "typ": "switch", "name": "Switch A", "position": { "x": 220, "y": 120 } },
-    { "id": "g3", "typ": "access-point", "name": "WLAN A", "position": { "x": 220, "y": 340 } },
+    {
+      "id": "g2",
+      "typ": "switch",
+      "name": "Switch A",
+      "position": {
+        "x": 220,
+        "y": 120
+      }
+    },
+    {
+      "id": "g3",
+      "typ": "access-point",
+      "name": "WLAN A",
+      "position": {
+        "x": 220,
+        "y": 340
+      }
+    },
     {
       "id": "g4",
       "typ": "smartphone",
       "name": "Handy Familie A",
-      "position": { "x": 0, "y": 460 },
+      "position": {
+        "x": 0,
+        "y": 460
+      },
       "dhcp": true,
-      "dienste": [{ "art": "browser" }]
+      "dienste": [
+        {
+          "art": "browser"
+        }
+      ]
     },
     {
       "id": "g5",
       "typ": "router",
       "name": "Heimrouter A",
-      "position": { "x": 460, "y": 120 },
-      "anschluesse": {
-        "l4": { "ip": "192.168.178.1", "subnetzmaske": "255.255.255.0" },
-        "l5": { "ip": "203.0.113.2", "subnetzmaske": "255.255.255.0" }
+      "position": {
+        "x": 460,
+        "y": 120
       },
-      "nat": { "aussenLeitungId": "l5" },
+      "anschluesse": {
+        "l4": {
+          "ip": "192.168.178.1",
+          "subnetzmaske": "255.255.255.0"
+        },
+        "l5": {
+          "ip": "203.0.113.2",
+          "subnetzmaske": "255.255.255.0"
+        }
+      },
+      "nat": {
+        "aussenLeitungId": "l5"
+      },
       "dienste": [
         {
           "art": "dhcp-server",
@@ -47,41 +88,82 @@
       "id": "g6",
       "typ": "router",
       "name": "Internet",
-      "position": { "x": 720, "y": 120 },
+      "position": {
+        "x": 720,
+        "y": 120
+      },
       "anschluesse": {
-        "l5": { "ip": "203.0.113.1", "subnetzmaske": "255.255.255.0" },
-        "l6": { "ip": "203.0.114.1", "subnetzmaske": "255.255.255.0" },
-        "l7": { "ip": "198.51.100.1", "subnetzmaske": "255.255.255.0" }
+        "l5": {
+          "ip": "203.0.113.1",
+          "subnetzmaske": "255.255.255.0"
+        },
+        "l6": {
+          "ip": "203.0.114.1",
+          "subnetzmaske": "255.255.255.0"
+        },
+        "l7": {
+          "ip": "198.51.100.1",
+          "subnetzmaske": "255.255.255.0"
+        }
       }
     },
     {
       "id": "g7",
       "typ": "router",
       "name": "Heimrouter B",
-      "position": { "x": 980, "y": 120 },
-      "anschluesse": {
-        "l6": { "ip": "203.0.114.2", "subnetzmaske": "255.255.255.0" },
-        "l8": { "ip": "192.168.178.1", "subnetzmaske": "255.255.255.0" }
+      "position": {
+        "x": 980,
+        "y": 120
       },
-      "nat": { "aussenLeitungId": "l6" }
+      "anschluesse": {
+        "l6": {
+          "ip": "203.0.114.2",
+          "subnetzmaske": "255.255.255.0"
+        },
+        "l8": {
+          "ip": "192.168.178.1",
+          "subnetzmaske": "255.255.255.0"
+        }
+      },
+      "nat": {
+        "aussenLeitungId": "l6"
+      }
     },
     {
       "id": "g8",
       "typ": "computer",
       "name": "Laptop Familie B",
-      "position": { "x": 1220, "y": 120 },
+      "position": {
+        "x": 1220,
+        "y": 120
+      },
       "ip": "192.168.178.10",
       "subnetzmaske": "255.255.255.0",
       "gateway": "192.168.178.1",
       "dnsServer": "198.51.100.53",
-      "dienste": [{ "art": "browser" }]
+      "dienste": [
+        {
+          "art": "browser"
+        }
+      ]
     },
-    { "id": "g9", "typ": "switch", "name": "Rechenzentrum", "position": { "x": 720, "y": 380 } },
+    {
+      "id": "g9",
+      "typ": "switch",
+      "name": "Rechenzentrum",
+      "position": {
+        "x": 720,
+        "y": 380
+      }
+    },
     {
       "id": "g10",
       "typ": "server",
       "name": "Webserver",
-      "position": { "x": 560, "y": 560 },
+      "position": {
+        "x": 560,
+        "y": 560
+      },
       "ip": "198.51.100.10",
       "subnetzmaske": "255.255.255.0",
       "gateway": "198.51.100.1",
@@ -101,25 +183,112 @@
       "id": "g11",
       "typ": "server",
       "name": "DNS-Server",
-      "position": { "x": 880, "y": 560 },
+      "position": {
+        "x": 880,
+        "y": 560
+      },
       "ip": "198.51.100.53",
       "subnetzmaske": "255.255.255.0",
       "gateway": "198.51.100.1",
       "dienste": [
-        { "art": "dns-server", "eintraege": [{ "domain": "www.beispiel.test", "ip": "198.51.100.10" }] }
+        {
+          "art": "dns-server",
+          "eintraege": [
+            {
+              "domain": "www.beispiel.test",
+              "ip": "198.51.100.10"
+            }
+          ]
+        }
       ]
     }
   ],
   "leitungen": [
-    { "id": "l1", "art": "kabel", "von": "g1", "nach": "g2" },
-    { "id": "l2", "art": "kabel", "von": "g3", "nach": "g2" },
-    { "id": "l3", "art": "wlan", "von": "g4", "nach": "g3" },
-    { "id": "l4", "art": "kabel", "von": "g2", "nach": "g5" },
-    { "id": "l5", "art": "kabel", "von": "g5", "nach": "g6" },
-    { "id": "l6", "art": "kabel", "von": "g6", "nach": "g7" },
-    { "id": "l7", "art": "kabel", "von": "g6", "nach": "g9" },
-    { "id": "l8", "art": "kabel", "von": "g7", "nach": "g8" },
-    { "id": "l9", "art": "kabel", "von": "g10", "nach": "g9" },
-    { "id": "l10", "art": "kabel", "von": "g11", "nach": "g9" }
-  ]
+    {
+      "id": "l1",
+      "art": "kabel",
+      "von": "g1",
+      "nach": "g2"
+    },
+    {
+      "id": "l2",
+      "art": "kabel",
+      "von": "g3",
+      "nach": "g2"
+    },
+    {
+      "id": "l3",
+      "art": "wlan",
+      "von": "g4",
+      "nach": "g3"
+    },
+    {
+      "id": "l4",
+      "art": "kabel",
+      "von": "g2",
+      "nach": "g5"
+    },
+    {
+      "id": "l5",
+      "art": "kabel",
+      "von": "g5",
+      "nach": "g6"
+    },
+    {
+      "id": "l6",
+      "art": "kabel",
+      "von": "g6",
+      "nach": "g7"
+    },
+    {
+      "id": "l7",
+      "art": "kabel",
+      "von": "g6",
+      "nach": "g9"
+    },
+    {
+      "id": "l8",
+      "art": "kabel",
+      "von": "g7",
+      "nach": "g8"
+    },
+    {
+      "id": "l9",
+      "art": "kabel",
+      "von": "g10",
+      "nach": "g9"
+    },
+    {
+      "id": "l10",
+      "art": "kabel",
+      "von": "g11",
+      "nach": "g9"
+    }
+  ],
+  "aufgabe": {
+    "titel": "Heimnetze und Internet (DHCP und NAT)",
+    "auftrag": "Hol für „PC Familie A“ per DHCP eine IP-Adresse und verfolge den Ablauf im Sequenzdiagramm. Rufe dann www.beispiel.test auf. Welche Absender-Adresse sieht der Webserver? Sieh dir die NAT-Tabelle von Heimrouter A an. Warum dürfen beide Familien dieselben Adressen benutzen?",
+    "hilfen": [
+      "Wähle „PC Familie A“ aus und tippe auf „IP-Adresse per DHCP holen“.",
+      "Die NAT-Tabelle siehst du im Panel von Heimrouter A."
+    ],
+    "aufbauGesperrt": false,
+    "blackbox": [],
+    "pruefungen": [
+      {
+        "art": "dhcp",
+        "geraetId": "g1"
+      },
+      {
+        "art": "webseite",
+        "geraetId": "g1",
+        "adresse": "www.beispiel.test"
+      },
+      {
+        "art": "webseite",
+        "geraetId": "g8",
+        "adresse": "www.beispiel.test"
+      }
+    ]
+  }
 }

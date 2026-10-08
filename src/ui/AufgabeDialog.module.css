@@ -1,0 +1,146 @@
+.dialog {
+  width: min(680px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  padding: 0;
+  border: 2px solid var(--farbe-text);
+  border-radius: 12px;
+  background: var(--farbe-hintergrund);
+  color: var(--farbe-text);
+}
+
+.dialog::backdrop {
+  background: rgb(0 0 0 / 0.45);
+}
+
+.inhalt {
+  display: flex;
+  flex-direction: column;
+  gap: var(--abstand-3);
+  padding: var(--abstand-4);
+}
+
+.inhalt h2 {
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+.leise {
+  margin: 0;
+  color: var(--farbe-text-leise);
+  font-size: 0.875rem;
+}
+
+.feld {
+  display: flex;
+  flex-direction: column;
+  gap: var(--abstand-1);
+}
+
+.feld > span {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--farbe-text-leise);
+}
+
+.feld input,
+.feld textarea,
+.feld select {
+  min-height: var(--touch-min);
+  padding: 0 var(--abstand-2);
+  border: 1px solid var(--farbe-rand);
+  border-radius: 6px;
+  background: var(--farbe-hintergrund);
+  color: var(--farbe-text);
+  font: inherit;
+}
+
+.feld textarea {
+  padding: var(--abstand-2);
+}
+
+.ankreuzen {
+  display: flex;
+  gap: var(--abstand-2);
+  align-items: center;
+  min-height: 40px;
+}
+
+.ankreuzen input {
+  width: 20px;
+  height: 20px;
+  flex: none;
+}
+
+.gruppe {
+  display: flex;
+  flex-direction: column;
+  gap: var(--abstand-2);
+  margin: 0;
+  padding: var(--abstand-3);
+  border: 1px solid var(--farbe-rand);
+  border-radius: var(--radius);
+}
+
+.gruppe legend {
+  padding: 0 var(--abstand-1);
+  font-weight: 700;
+}
+
+.auswahl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--abstand-4);
+}
+
+.pruefung {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--abstand-2);
+  padding: var(--abstand-2);
+  border: 1px dashed var(--farbe-rand);
+  border-radius: 6px;
+}
+
+.knoepfe {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--abstand-2);
+}
+
+.abstand {
+  flex: 1;
+}
+
+.knoepfe button,
+.klein {
+  min-height: var(--touch-min);
+  padding: 0 var(--abstand-4);
+  border: 1px solid var(--farbe-rand);
+  border-radius: var(--radius);
+  background: var(--farbe-flaeche);
+  color: var(--farbe-text);
+  cursor: pointer;
+}
+
+.klein {
+  justify-self: start;
+  align-self: start;
+}
+
+.knoepfe .primaer {
+  border-color: var(--farbe-akzent);
+  background: var(--farbe-akzent);
+  color: var(--farbe-akzent-text);
+  font-weight: 700;
+}
+
+.knoepfe .gefahr {
+  border-color: var(--farbe-fehler);
+  color: var(--farbe-fehler);
+}
+
+@media (max-width: 720px) {
+  .pruefung {
+    grid-template-columns: 1fr;
+  }
+}

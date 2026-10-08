@@ -8,26 +8,51 @@
       "id": "g1",
       "typ": "computer",
       "name": "Computer 1",
-      "position": { "x": 0, "y": 0 },
+      "position": {
+        "x": 0,
+        "y": 0
+      },
       "ip": "192.168.0.10",
       "dnsServer": "192.168.0.4",
-      "dienste": [{ "art": "browser" }]
+      "dienste": [
+        {
+          "art": "browser"
+        }
+      ]
     },
     {
       "id": "g2",
       "typ": "computer",
       "name": "Computer 2",
-      "position": { "x": 0, "y": 240 },
+      "position": {
+        "x": 0,
+        "y": 240
+      },
       "ip": "192.168.0.2",
       "dnsServer": "192.168.0.3",
-      "dienste": [{ "art": "browser" }]
+      "dienste": [
+        {
+          "art": "browser"
+        }
+      ]
     },
-    { "id": "g3", "typ": "switch", "name": "Switch", "position": { "x": 260, "y": 120 } },
+    {
+      "id": "g3",
+      "typ": "switch",
+      "name": "Switch",
+      "position": {
+        "x": 260,
+        "y": 120
+      }
+    },
     {
       "id": "g4",
       "typ": "server",
       "name": "Webserver-Rechner",
-      "position": { "x": 540, "y": 0 },
+      "position": {
+        "x": 540,
+        "y": 0
+      },
       "ip": "192.168.0.2",
       "dienste": [
         {
@@ -45,17 +70,69 @@
       "id": "g5",
       "typ": "server",
       "name": "DNS-Rechner",
-      "position": { "x": 540, "y": 240 },
+      "position": {
+        "x": 540,
+        "y": 240
+      },
       "ip": "192.168.0.3",
       "dienste": [
-        { "art": "dns-server", "eintraege": [{ "domain": "www.schule.tset", "ip": "192.168.0.2" }] }
+        {
+          "art": "dns-server",
+          "eintraege": [
+            {
+              "domain": "www.schule.tset",
+              "ip": "192.168.0.2"
+            }
+          ]
+        }
       ]
     }
   ],
   "leitungen": [
-    { "id": "l1", "art": "kabel", "von": "g1", "nach": "g3" },
-    { "id": "l2", "art": "kabel", "von": "g2", "nach": "g3" },
-    { "id": "l3", "art": "kabel", "von": "g4", "nach": "g3" },
-    { "id": "l4", "art": "kabel", "von": "g5", "nach": "g3" }
-  ]
+    {
+      "id": "l1",
+      "art": "kabel",
+      "von": "g1",
+      "nach": "g3"
+    },
+    {
+      "id": "l2",
+      "art": "kabel",
+      "von": "g2",
+      "nach": "g3"
+    },
+    {
+      "id": "l3",
+      "art": "kabel",
+      "von": "g4",
+      "nach": "g3"
+    },
+    {
+      "id": "l4",
+      "art": "kabel",
+      "von": "g5",
+      "nach": "g3"
+    }
+  ],
+  "aufgabe": {
+    "titel": "Fehlersuche: Warum lädt die Seite nicht?",
+    "auftrag": "Auf Computer 1 soll www.schule.test angezeigt werden – das klappt aber nicht. Finde und behebe die drei Fehler. Tipp: Lies die Fehlermeldungen im Browser und im Protokoll genau.",
+    "hilfen": [
+      "Ein Fehler ist schon am Netzplan zu sehen (⚠).",
+      "Rufe die Seite auf und lies die Fehlermeldung im Browser: Wen fragt Computer 1 nach der IP-Adresse?",
+      "Vergleiche die Domain in der Tabelle des DNS-Servers Buchstabe für Buchstabe mit www.schule.test."
+    ],
+    "aufbauGesperrt": true,
+    "blackbox": [],
+    "pruefungen": [
+      {
+        "art": "adressen-ok"
+      },
+      {
+        "art": "webseite",
+        "geraetId": "g1",
+        "adresse": "www.schule.test"
+      }
+    ]
+  }
 }

@@ -1,5 +1,7 @@
 import type { AdressProblem } from '../model/adressen';
+import type { Pruefung } from '../model/datei';
 import type { DnsEintragProblem } from '../model/dienste';
+import type { PruefErgebnis } from '../sim/pruefung';
 import { maskeZuZahl, netzBeschreibung } from '../model/ip';
 import type { RoutingEintragProblem } from '../model/routing';
 import type { VerbindungsProblem } from '../model/netz';
@@ -293,3 +295,37 @@ export const routingEintragTexte: Record<RoutingEintragProblem, string> = {
   'gateway-ungueltig': 'Gateway ist keine gültige IP-Adresse',
   'anschluss-fehlt': 'Anschluss gibt es nicht (mehr)',
 };
+
+/** Was eine automatische Prüfung testet – als Satz für Schüler:innen. */
+export function pruefungText(p: Pruefung, name: (id: string) => string): string {
+  switch (p.art) {
+    case 'webseite':
+      return `Der Browser auf ${name(p.geraetId)} zeigt ${p.adresse} an.`;
+    case 'nachricht':
+      return `Eine Nachricht von ${name(p.geraetId)} an ${p.zielIp} kommt an und wird beantwortet.`;
+    case 'adressen-ok':
+      return 'Im Netz gibt es keine Adressprobleme (kein ⚠).';
+    case 'dhcp':
+      return `${name(p.geraetId)} bekommt per DHCP eine IP-Adresse.`;
+  }
+}
+
+/** Warum eine Prüfung nicht bestanden ist – mit Hinweis, ohne die Lösung zu verraten. */
+export function pruefFehlerText(e: Exclude<PruefErgebnis, { ok: true }>, geraet: string): string {
+  switch (e.grund) {
+    case 'geraet-fehlt':
+      return 'Das Gerät aus der Aufgabe gibt es nicht mehr.';
+    case 'browser':
+      return e.fehler.grund === 'status-404'
+        ? 'Der Webserver ist erreichbar, aber die Seite gibt es dort nicht.'
+        : browserFehlerText(e.fehler, geraet).titel + '.';
+    case 'senden':
+      return sendeFehlerText(e.fehler, geraet, '');
+    case 'keine-antwort':
+      return 'Die Nachricht kam nicht an oder es kam keine Antwort zurück. Probiere es im Modus „Ausprobieren“ aus.';
+    case 'adressprobleme':
+      return `${e.anzahl} ${e.anzahl === 1 ? 'Gerät hat' : 'Geräte haben'} noch ein Adressproblem – achte auf ⚠ im Netzplan.`;
+    case 'dhcp':
+      return 'Es wurde keine Adresse per DHCP vergeben. Gibt es einen DHCP-Server im lokalen Rechnernetz?';
+  }
+}
